@@ -20,8 +20,8 @@ export default defineConfig({
         // Home-screen labels truncate around 12 characters.
         short_name: 'Keypad',
         description: 'Original pocket games inspired by the phones we grew up with.',
-        theme_color: '#0f1a0f',
-        background_color: '#0f1a0f',
+        theme_color: '#0d0e14',
+        background_color: '#0d0e14',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

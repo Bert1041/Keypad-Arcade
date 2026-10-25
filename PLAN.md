@@ -38,9 +38,15 @@ That means local identity is no longer the hook, so spreading depends on:
 3. **Feel and polish** — remakes compete with every Snake/Breakout clone online; ours must feel
    better on a budget phone than theirs.
 
-Launch candidates come back to the catalogue's shortlist (`RETROBOX_GAME_CATALOGUE.md` §3):
-physics ball platformer, scrolling space shooter, and tower stacker *or* a Snake variant. Phase 0
-polls rank these with screenshots of the historical references.
+**Launch lineup (decided 2026-10-25):** three games, all built before launch:
+
+| Working title | Id | Inspired by | Role |
+|---|---|---|---|
+| **Coil** | `coil` | Snake / Snake II | Instant recognition, 1-minute runs — built first |
+| **Star Raid** | `star-raid` | Space Impact | Score-chasing arcade action |
+| **Rebound** | `rebound` | Bounce / Bounce Tales | Physics platformer flagship |
+
+Titles are working names (not checked for conflicts). Ids are permanent once a build ships.
 
 Original names, art, sound and levels are still required (README §13) — "neutral" does not mean
 lookalike.
@@ -66,8 +72,8 @@ seed) is not built. Link previews have title/description; the preview **image ne
 production domain** (absolute `og:image` URL).
 
 **Rule for every game:** all gameplay randomness must come from the function `beginRun()`
-returns. A single `Math.random()` in gameplay silently breaks challenge links — and no automated
-test can see it, so it is a code-review check.
+returns. A single `Math.random()` in gameplay silently breaks challenge links; a guard test in
+`src/architecture.test.ts` fails the build if one appears in a game folder.
 
 ## 4. Audience constraints that shape engineering
 
@@ -86,31 +92,20 @@ Phase 0 and Phase 1 run **in parallel** — the game host does not depend on whi
 |---|---|---|---|
 | **0 — Validate** | WhatsApp/X polls ranking the catalogue shortlist; 10 short chats with people who played Nokia/Java games in Nigeria | 3 concepts chosen with evidence; one-page brief each | 1–2 wk |
 | **1 — Game host** *(built 2026-10-25; real-device check pending)* | Vite/React/TS shell, registry, Phaser lifecycle, local saves, settings, PWA, disposable prototype game, e2e lifecycle test | Enter → play → exit → re-enter ×N with exactly one live game and canvas; best score survives reload | 1 wk |
-| **2 — Flagship + share loop** | First chosen game to brief; share card; challenge links; seeded RNG | Playable on a real budget Android; share → open link → same run works from WhatsApp | 2–3 wk |
-| **2.5 — Soft launch** | Ship to ~100 people via WhatsApp groups | §1 numbers measured for 2 weeks | 2 wk |
-| **3 — Games 2 & 3** | Only if 2.5 shows the loop works; otherwise fix the flagship first | All three playable, independent saves | 3–4 wk |
-| **4 — Polish + public launch** | Icons, offline/update testing on devices, perf pass, launch content | README §10 definition of done | 1–2 wk |
+| **2 — Share loop + new look** *(share loop built 2026-10-25)* | Share card, challenge links, seeded RNG; modern theme with pixel accents | Share → open link → same run works from WhatsApp on a real phone | 1–2 wk |
+| **3 — The three launch games** | Coil → Star Raid → Rebound, each to its brief, each in its own folder | All three playable on a budget Android, independent saves, challenge links replay each | 4–6 wk |
+| **3.5 — Soft launch** | Ship to ~100 people via WhatsApp groups | §1 numbers measured for 2 weeks | 2 wk |
+| **4 — Polish + public launch** | Fix what 3.5 showed; icons, offline/update testing on devices, perf pass, launch content | README §10 definition of done | 1–2 wk |
+
+**Changed 2026-10-25:** launch with three games rather than soft-launching one. Costs ~4 weeks
+before the first real player feedback; buys a collection that feels like a product on day one.
 
 ## 6. Engineering standards (non-negotiable)
 
-- `npm run check` = typecheck + unit tests + build. Must pass before anything is called done.
-- **Lifecycle is tested in a real browser**, not by mocks: Playwright counts live Phaser instances
-  and canvases across repeated enter/exit.
-- **Persistence is tested in a real browser**: play, reload, best score still there.
-- Every test is mutation-checked once: break the code it guards, watch it fail, restore.
-- No dependency without a concrete current need (README rule 11).
-- Bundle size checked each build against the §4 budget.
-
-### Commands
-
-| Command | What it does |
-|---|---|
-| `npm run dev` | Dev server (React StrictMode on) |
-| `npm run check` | Typecheck → unit tests → production build → bundle budget |
-| `npm run e2e` | Real-browser suite: Pixel 7/Chromium, iPhone 14/WebKit, and a StrictMode dev-server pass |
-| `npm run icons` | Re-render PNG icons from `public/icons/icon.svg` |
-
-The `prototype` game ("Stack Test") is disposable: delete it, and its registry entry, once the first real game exists.
+How we test and build is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §8 and the commands in
+[README.md](README.md). In short: `npm run check` and `npm run e2e` pass before anything is
+called done; every test is mutation-checked; anything stored or rendered is verified in a real
+browser; the first-load budget is enforced in the build.
 
 ## 7. Decisions needed from you
 
@@ -143,6 +138,8 @@ Update when a decision changes. Dates are when it was made.
 
 | Decision | Current baseline | Revisit when |
 |---|---|---|
+| Theme (2026-10-25) | Modern dark app with pixel-art accents (pixel font for titles, pixel game icons); replaces the green LCD look | Player feedback |
+| Launch lineup (2026-10-25) | Coil (snake), Star Raid (shooter), Rebound (ball platformer), all before launch | Soft-launch data |
 | Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |
 | Games (2026-10-25) | Neutral retro remakes, original names/art/levels | Phase 0 polls disagree |
 | Sharing (2026-10-25) | Client-only: share card + seeded challenge links, no backend | Leaderboards have evidence |

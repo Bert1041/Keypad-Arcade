@@ -1,0 +1,25 @@
+/*
+ * Every colour, font and radius in the app shell. Components use these variables only —
+ * src/architecture.test.ts fails on a raw colour anywhere else. Games keep their own palettes.
+ */
+:root {
+  color-scheme: dark;
+
+  --bg: #0d0e14;
+  --surface: #161823;
+  --surface-raised: #1f2232;
+  --border: #2c3046;
+  --border-strong: #444a68;
+  --text: #eef0f8;
+  --text-muted: #a3a9c2;
+  /* One accent, used for the primary action, focus and "new best" — nothing else. */
+  --accent: #ffd23f;
+  --accent-ink: #1b1600;
+
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Titles and numbers only: pixel type is hard to read in sentences. */
+  --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+
+  --radius: 12px;
+  --radius-small: 8px;
+}

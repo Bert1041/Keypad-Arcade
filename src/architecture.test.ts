@@ -139,3 +139,36 @@ describe('the shell stays light', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('the shell uses design tokens', () => {
+  const TOKENS = join(SRC, 'styles', 'tokens.css');
+  const shellFiles = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (path === GAMES) return []; // games keep their own palettes
+      if (statSync(path).isDirectory()) return shellFiles(path);
+      return /\.(css|tsx?)$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
+    });
+
+  it('has no raw colours outside src/styles/tokens.css', () => {
+    const raw = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/;
+    const offenders = shellFiles(SRC)
+      .filter((file) => file !== TOKENS && raw.test(code(file)))
+      .map(rel);
+    expect(offenders).toEqual([]);
+  });
+
+  it('uses only tokens that exist', () => {
+    // CSS ignores an unknown variable silently, so a renamed token would just lose its colour.
+    const defined = new Set(
+      [...readFileSync(TOKENS, 'utf8').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]),
+    );
+    const missing = shellFiles(SRC).flatMap((file) =>
+      [...code(file).matchAll(/var\((--[\w-]+)/g)]
+        .map((m) => m[1] ?? '')
+        .filter((name) => !defined.has(name))
+        .map((name) => `${rel(file)} uses ${name}`),
+    );
+    expect(missing).toEqual([]);
+  });
+});

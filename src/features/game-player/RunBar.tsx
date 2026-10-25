@@ -67,6 +67,7 @@ export function RunBar({ game, challenge, lastRun }: Props) {
       {lastRun && (
         <button
           type="button"
+          className="button-primary"
           disabled={busy}
           onClick={() => void share(lastRun)}
           data-testid="share-button"

@@ -4,18 +4,25 @@
   align-items: center;
   gap: 8px;
   padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
-  border-bottom: 2px solid var(--ink-dim);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 .title {
   margin: 0;
-  font-size: 18px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 12px;
+  text-align: center;
 }
 .back {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border-color: transparent;
+  padding-left: 4px;
 }
 .right {
   justify-self: end;
   font-size: 14px;
+  color: var(--text-muted);
 }

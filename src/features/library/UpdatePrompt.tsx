@@ -11,7 +11,11 @@ export function UpdatePrompt() {
   return (
     <div className={styles.toast} role="status">
       <span>A new version is ready.</span>
-      <button type="button" onClick={() => void updateServiceWorker(true)}>
+      <button
+        type="button"
+        className="button-primary"
+        onClick={() => void updateServiceWorker(true)}
+      >
         Update
       </button>
       <button type="button" onClick={() => setNeedRefresh(false)}>

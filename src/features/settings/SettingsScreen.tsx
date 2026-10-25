@@ -10,18 +10,20 @@ export function SettingsScreen() {
   return (
     <main className={styles.screen}>
       <TopBar onBack={leave} title="Settings" />
-      <label className={styles.row}>
-        <span>Sound</span>
-        <input
-          type="checkbox"
-          checked={soundEnabled}
-          onChange={(e) => void setSoundEnabled(e.target.checked)}
-          data-testid="sound-toggle"
-        />
-      </label>
-      <p className={styles.note}>
-        Scores are saved on this device only. Clearing your browser data removes them.
-      </p>
+      <div className={styles.list}>
+        <label className={styles.row}>
+          <span>Sound</span>
+          <input
+            type="checkbox"
+            checked={soundEnabled}
+            onChange={(e) => void setSoundEnabled(e.target.checked)}
+            data-testid="sound-toggle"
+          />
+        </label>
+        <p className={styles.note}>
+          Scores are saved on this device only. Clearing your browser data removes them.
+        </p>
+      </div>
     </main>
   );
 }

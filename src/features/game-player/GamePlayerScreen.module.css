@@ -22,19 +22,30 @@
   position: absolute;
   inset: auto 16px 16px;
   padding: 12px;
-  border: 2px solid var(--ink);
-  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
 }
 .runBar {
   flex: none;
-  min-height: 60px;
+  /* Fixed, not min-height: if a long message grew the bar, the game would rescale mid-run. */
+  height: calc(76px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 16px calc(env(safe-area-inset-bottom) + 8px);
-  border-top: 2px solid var(--ink-dim);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 .runStatus {
   flex: 1;
+  min-width: 0;
   font-size: 15px;
+  color: var(--text-muted);
+  /* Two lines fit the fixed bar height; longer messages are cut, never grow the bar. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }

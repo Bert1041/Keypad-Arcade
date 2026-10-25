@@ -1,8 +1,6 @@
 const SIZE = 1080;
-const BG = '#10200f';
-const INK = '#c7f464';
-const INK_2 = '#8fd14f';
-const FONT = 'ui-monospace, Menlo, Consolas, monospace';
+const PIXEL_FONT = '"Press Start 2P", ui-monospace, monospace';
+const BODY_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 export interface ShareCardContent {
   appName: string;
@@ -12,44 +10,56 @@ export interface ShareCardContent {
   host: string;
 }
 
+/** The card uses the app's own tokens (src/styles/tokens.css), so a restyle restyles it too. */
+function token(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 /** Draws the image that travels with a share. Square, because WhatsApp and X crop to it. */
-export function renderShareCard(content: ShareCardContent): Promise<Blob> {
+export async function renderShareCard(content: ShareCardContent): Promise<Blob> {
+  // Canvas text does not wait for web fonts; without this the first card can fall back.
+  await document.fonts.load(`48px ${PIXEL_FONT}`).catch(() => undefined);
+
   const canvas = document.createElement('canvas');
   canvas.width = SIZE;
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return Promise.reject(new Error('2D canvas unavailable'));
+  if (!ctx) throw new Error('2D canvas unavailable');
 
-  ctx.fillStyle = BG;
+  const accent = token('--accent');
+  ctx.fillStyle = token('--bg');
   ctx.fillRect(0, 0, SIZE, SIZE);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 12;
-  ctx.strokeRect(36, 36, SIZE - 72, SIZE - 72);
+  ctx.fillStyle = token('--surface');
+  ctx.beginPath();
+  ctx.roundRect(60, 60, SIZE - 120, SIZE - 120, 48);
+  ctx.fill();
 
-  ctx.fillStyle = INK;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `bold 56px ${FONT}`;
-  ctx.fillText(content.appName.toUpperCase(), SIZE / 2, 150);
-  ctx.font = `44px ${FONT}`;
-  ctx.fillText(content.gameTitle, SIZE / 2, 240);
+  ctx.fillStyle = accent;
+  ctx.font = `40px ${PIXEL_FONT}`;
+  ctx.fillText(content.appName.toUpperCase(), SIZE / 2, 190);
 
-  ctx.font = `bold ${content.score >= 10_000 ? 200 : 300}px ${FONT}`;
-  ctx.fillText(String(content.score), SIZE / 2, 520);
+  ctx.fillStyle = token('--text-muted');
+  ctx.font = `600 48px ${BODY_FONT}`;
+  ctx.fillText(content.gameTitle, SIZE / 2, 290);
 
-  ctx.font = `bold 64px ${FONT}`;
-  ctx.fillText('Can you beat me?', SIZE / 2, 780);
+  ctx.fillStyle = token('--text');
+  const digits = String(content.score).length;
+  ctx.font = `${digits > 4 ? 120 : digits > 2 ? 170 : 220}px ${PIXEL_FONT}`;
+  ctx.fillText(String(content.score), SIZE / 2, 540);
 
-  // Little stacked-block motif, in the app's two-tone palette.
-  for (let i = 0; i < 4; i++) {
-    const w = 240 - i * 48;
-    ctx.fillStyle = i % 2 ? INK_2 : INK;
-    ctx.fillRect((SIZE - w) / 2, 940 - i * 36, w, 30);
-  }
+  // Pixel underline in the accent colour.
+  ctx.fillStyle = accent;
+  for (let i = 0; i < 9; i++) ctx.fillRect(SIZE / 2 - 216 + i * 48, 690, 36, 12);
 
-  ctx.fillStyle = INK;
-  ctx.font = `36px ${FONT}`;
-  ctx.fillText(content.host, SIZE / 2, 1000);
+  ctx.fillStyle = token('--text');
+  ctx.font = `700 64px ${BODY_FONT}`;
+  ctx.fillText('Can you beat me?', SIZE / 2, 800);
+
+  ctx.fillStyle = token('--text-muted');
+  ctx.font = `36px ${BODY_FONT}`;
+  ctx.fillText(content.host, SIZE / 2, 920);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(

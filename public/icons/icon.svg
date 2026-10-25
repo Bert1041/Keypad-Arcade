@@ -1,8 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
-  <rect width="64" height="64" fill="#10200f"/>
-  <rect x="12" y="44" width="40" height="8" fill="#c7f464"/>
-  <rect x="16" y="36" width="32" height="8" fill="#8fd14f"/>
-  <rect x="20" y="28" width="24" height="8" fill="#c7f464"/>
-  <rect x="24" y="20" width="16" height="8" fill="#8fd14f"/>
-  <rect x="26" y="10" width="16" height="8" fill="#c7f464"/>
+  <!-- Full-bleed background so the maskable icon has no transparent corners. -->
+  <rect width="64" height="64" fill="#0d0e14"/>
+  <!-- Screen -->
+  <rect x="16" y="8" width="32" height="18" fill="#1f2232"/>
+  <rect x="20" y="16" width="4" height="4" fill="#ffd23f"/>
+  <rect x="24" y="16" width="4" height="4" fill="#ffd23f"/>
+  <rect x="28" y="16" width="4" height="4" fill="#ffd23f"/>
+  <rect x="40" y="12" width="4" height="4" fill="#eef0f8"/>
+  <!-- 3×3 keypad -->
+  <g fill="#ffd23f">
+    <rect x="16" y="30" width="8" height="6"/><rect x="28" y="30" width="8" height="6"/><rect x="40" y="30" width="8" height="6"/>
+    <rect x="16" y="40" width="8" height="6"/><rect x="28" y="40" width="8" height="6"/><rect x="40" y="40" width="8" height="6"/>
+    <rect x="16" y="50" width="8" height="6"/><rect x="28" y="50" width="8" height="6"/><rect x="40" y="50" width="8" height="6"/>
+  </g>
 </svg>

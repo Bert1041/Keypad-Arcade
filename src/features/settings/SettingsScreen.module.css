@@ -1,21 +1,31 @@
 .screen {
   min-height: 100dvh;
 }
+.list {
+  max-width: 640px;
+  margin: 16px auto 0;
+  padding: 0 16px;
+}
 .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   padding: 16px;
-  border-bottom: 2px solid var(--ink-dim);
-  font-size: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 17px;
+  cursor: pointer;
 }
 .row input {
-  width: 28px;
-  height: 28px;
-  accent-color: var(--ink);
+  width: 24px;
+  height: 24px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 .note {
-  padding: 0 16px;
-  opacity: 0.8;
+  margin-top: 16px;
+  color: var(--text-muted);
   font-size: 14px;
 }

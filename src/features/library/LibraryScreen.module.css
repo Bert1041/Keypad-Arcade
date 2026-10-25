@@ -1,46 +1,75 @@
 .screen {
   min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px);
+  max-width: 960px;
+  margin: 0 auto;
+}
+.header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.logo {
+  margin: 0;
+  font-size: clamp(14px, 4.5vw, 22px);
+  line-height: 1.5;
+  color: var(--accent);
+}
+.settings {
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 10px 4px;
+}
+.tagline {
+  margin: 4px 0 24px;
+  color: var(--text-muted);
 }
 .grid {
   list-style: none;
   margin: 0;
-  padding: 16px;
+  padding: 0;
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
 .card {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
   padding: 12px;
-  border: 2px solid var(--ink);
-  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   text-decoration: none;
-  background: var(--panel);
 }
-.card:active,
-.card:focus-visible {
-  background: var(--ink);
-  color: var(--bg);
+.card:hover,
+.card:active {
+  border-color: var(--border-strong);
 }
-.card img {
+.thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
   image-rendering: pixelated;
-  flex: none;
+  border-radius: var(--radius-small);
+  background: var(--surface-raised);
+}
+.cardTitle {
+  margin-top: 4px;
+  font-size: 17px;
 }
 .cardText {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   font-size: 14px;
-}
-.cardText strong {
-  font-size: 18px;
+  color: var(--text-muted);
+  flex: 1;
 }
 .best {
-  opacity: 0.8;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 .toast {
   position: fixed;
@@ -51,8 +80,9 @@
   gap: 8px;
   align-items: center;
   padding: 12px;
-  border: 2px solid var(--ink);
-  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
 }
 .toast span {
   flex: 1;

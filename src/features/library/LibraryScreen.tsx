@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { APP_NAME } from '@/appInfo';
 import { games } from '@/games/registry';
 import { getStats, type GameStats } from '@/core/scores/scores';
-import { TopBar } from '@/components/TopBar';
 import { UpdatePrompt } from './UpdatePrompt';
 import styles from './LibraryScreen.module.css';
 
@@ -26,7 +25,13 @@ export function LibraryScreen() {
 
   return (
     <main className={styles.screen}>
-      <TopBar title={APP_NAME} right={<Link to="/settings">Settings</Link>} />
+      <header className={styles.header}>
+        <h1 className={`${styles.logo} pixel`}>{APP_NAME}</h1>
+        <Link to="/settings" className={styles.settings}>
+          Settings
+        </Link>
+      </header>
+      <p className={styles.tagline}>The games from your old phone, rebuilt.</p>
       <ul className={styles.grid}>
         {games.map((game) => {
           const best = stats[game.id]?.bestScore ?? 0;
@@ -37,13 +42,11 @@ export function LibraryScreen() {
                 className={styles.card}
                 data-testid={`game-card-${game.id}`}
               >
-                <img src={game.thumbnail} alt="" width={64} height={64} />
-                <span className={styles.cardText}>
-                  <strong>{game.title}</strong>
-                  <span>{game.description}</span>
-                  <span className={styles.best} data-testid={`best-${game.id}`}>
-                    Best: {best}
-                  </span>
+                <img className={styles.thumb} src={game.thumbnail} alt="" width={96} height={96} />
+                <strong className={styles.cardTitle}>{game.title}</strong>
+                <span className={styles.cardText}>{game.description}</span>
+                <span className={styles.best} data-testid={`best-${game.id}`}>
+                  Best: {best}
                 </span>
               </Link>
             </li>
