@@ -9,6 +9,8 @@ export const TILE_LEGEND = {
   '.': 'empty',
   '#': 'solid',
   '^': 'spikes',
+  v: 'ceiling spikes',
+  H: 'grate (solid, except to a small ball)',
   o: 'ring',
   '*': 'gem',
   '+': 'extra life',

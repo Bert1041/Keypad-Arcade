@@ -22,17 +22,16 @@ export const level: LevelDef = {
 
 /** A recorded playthrough that finishes the level; the tests replay it. */
 export const solution: ScriptStep[] = [
-  { ms: 300 },
-  { ms: 850, move: 1 },
-  { ms: 450, move: 1, jump: true },
-  { ms: 950, move: 1 },
-  { ms: 500, move: 1, jump: true },
   { ms: 1000, move: 1 },
-  { ms: 250, move: 1, jump: true },
-  { ms: 250, jump: true },
+  { ms: 1300, move: 1, jump: true },
+  { ms: 100 },
+  { ms: 300, move: 1, jump: true },
+  { ms: 600 },
+  { ms: 400, move: 1, jump: true },
   { ms: 300 },
-  { ms: 500, move: 1, jump: true },
-  { ms: 1275, move: 1 },
-  { ms: 500, move: 1, jump: true },
-  { ms: 2500, move: 1 },
+  { ms: 300, move: 1, jump: true },
+  { ms: 600 },
+  { ms: 117, move: 1, jump: true },
+  { ms: 700 },
+  { ms: 1583, move: 1, jump: true },
 ];

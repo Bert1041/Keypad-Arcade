@@ -13,7 +13,11 @@ export type Size = 'small' | 'normal' | 'big';
 /** Ball radius in px; the hitbox is the square around it. */
 export const RADIUS: Record<Size, number> = { small: 6, normal: 10, big: 14 };
 const MAX_RUN: Record<Size, number> = { small: 200, normal: 175, big: 150 };
-const JUMP_SPEED: Record<Size, number> = { small: 520, normal: 540, big: 480 };
+/**
+ * Small and big both jump lower than normal (about 3 tiles against 4): shrinking to pass a
+ * grate, or growing to float, costs you height until you change back.
+ */
+const JUMP_SPEED: Record<Size, number> = { small: 470, normal: 540, big: 470 };
 
 const GRAVITY = 1500;
 const MAX_FALL = 700;
@@ -207,8 +211,10 @@ function solidsNear(state: ReboundState, box: Box, ms: number): Box[] {
   const y1 = Math.floor((box.y + box.h - 0.001) / TILE);
   for (let ty = y0; ty <= y1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
-      if (tileAt(state.level, tx, ty) === '#')
+      const tile = tileAt(state.level, tx, ty);
+      if (tile === '#' || (tile === 'H' && state.ball.size !== 'small')) {
         out.push({ x: tx * TILE, y: ty * TILE, w: TILE, h: TILE });
+      }
     }
   }
   for (const p of state.level.platforms) {
@@ -355,6 +361,15 @@ export function tick(state: ReboundState, input: ReboundInput): ReboundEvent[] {
         }
         break;
       }
+      case 'v': {
+        // Hanging from the ceiling: the upper half of the tile.
+        const spikes = { x: tx * TILE + 3, y: ty * TILE, w: TILE - 6, h: TILE / 2 };
+        if (overlaps(box, spikes)) {
+          die(state, events);
+          return events;
+        }
+        break;
+      }
       case 'o':
       case '*':
       case '+':
@@ -420,6 +435,7 @@ export function tick(state: ReboundState, input: ReboundInput): ReboundEvent[] {
         break;
       case '.':
       case '#':
+      case 'H':
       case 'S':
         break;
     }

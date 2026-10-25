@@ -72,6 +72,31 @@ l.put(56, 12, 'o')                                 # safe ground again
 l.put(59, 12, 'E')
 levels['level03'] = emit('Stepping Stones', l, par_ms=24_000)
 
+# 4 — Squeeze: shrink through grates, change back to climb; ceiling spikes punish jumping.
+l = L(88, 14)
+l.put(2, 12, 'S')
+l.put(5, 12, 'o')
+l.put(8, 12, 's')                                  # shrink
+l.fill(11, 1, 11, 8); l.fill(11, 9, 11, 12, 'H')   # a wall you only pass small
+l.fill(12, 9, 20, 9)                               # a three-tile tunnel: room for a full hop…
+l.fill(16, 12, 16, 12, '^')                        # …with one spike to hop
+l.put(13, 12, 'o'); l.put(19, 12, '*')
+l.fill(22, 11, 24, 11); l.put(23, 12, 'n')         # back to normal to climb (low roof: no skipping it)
+l.fill(27, 10, 29, 12); l.put(28, 9, 'o')          # 3 high: too tall for a small ball
+l.fill(30, 12, 33, 12, '^')                        # 4-wide pit, taken from the wall top
+l.put(37, 12, 'C')
+l.put(40, 12, 's')
+l.fill(43, 1, 43, 10); l.fill(43, 11, 43, 12, 'H') # grate gate
+l.fill(44, 11, 52, 11, 'v')                        # ceiling spikes: do not jump here
+l.put(47, 12, 'o'); l.put(50, 12, 'o')
+l.fill(53, 1, 53, 10); l.fill(53, 11, 53, 12, 'H')
+l.fill(56, 11, 60, 11); l.put(58, 12, 'n')        # back to normal, under a low roof: no jumping over it
+l.fill(67, 12, 69, 12, '^')                        # runway after the roof, then the pit
+l.fill(75, 10, 76, 12); l.put(76, 9, '+')          # extra life on a block
+l.put(81, 12, 'o')
+l.put(85, 12, 'E')
+levels['level04'] = emit('Squeeze', l, par_ms=32_000)
+
 import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 json.dump(levels, open(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'levels.json'), 'w'), indent=1)

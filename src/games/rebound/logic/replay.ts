@@ -43,3 +43,66 @@ export function playScript(level: Level, script: readonly ScriptStep[]) {
   events.push(...tick(state, NO_INPUT));
   return { state, events };
 }
+
+/** Two ticks: how far off a player's timing can be at each input change. */
+export const NUDGE_MS = 2 * STEP_MS;
+/**
+ * How long after a nudged input change the ball must survive: the move and its landing. Time,
+ * not a number of steps — one long held step would otherwise stretch the window to seconds of
+ * play no player would leave uncorrected.
+ */
+export const REACTION_MS = 1500;
+
+/** The script cut off `ms` after it starts (the last step shortened to fit). */
+function truncate(solution: readonly ScriptStep[], ms: number): ScriptStep[] {
+  const out: ScriptStep[] = [];
+  let left = ms;
+  for (const step of solution) {
+    if (left <= 0) break;
+    out.push({ ...step, ms: Math.min(step.ms, left) });
+    left -= step.ms;
+  }
+  return out;
+}
+
+/**
+ * The input changes in a solution that a player could not hit reliably: moved `nudgeMs` earlier
+ * or later (only that boundary; everything after stays on schedule), the move it belongs to
+ * dies. Later steps are not judged — a player, unlike a fixed script, adjusts to where the ball
+ * actually landed. Returned as boundary indexes (i = between step i and i + 1).
+ */
+export function fragileBoundaries(
+  level: Level,
+  solution: readonly ScriptStep[],
+  nudgeMs = NUDGE_MS,
+): { boundary: number; late: boolean }[] {
+  const fragile: { boundary: number; late: boolean }[] = [];
+  for (let i = 0; i < solution.length - 1; i++) {
+    for (const delta of [-nudgeMs, nudgeMs]) {
+      const result = playNudged(level, solution, i, delta);
+      if (result?.events.some((e) => e.type === 'died')) {
+        fragile.push({ boundary: i, late: delta > 0 });
+      }
+    }
+  }
+  return fragile;
+}
+
+/**
+ * Replays a solution with input change `i` moved by `delta` ms, up to REACTION_MS after it —
+ * the one definition of "a nudge", for the fairness check and for anything explaining it.
+ * Null when the nudge would make a step negative.
+ */
+export function playNudged(
+  level: Level,
+  solution: readonly ScriptStep[],
+  i: number,
+  delta: number,
+): ReturnType<typeof playScript> | null {
+  const nudged = solution.map((s, j) =>
+    j === i ? { ...s, ms: s.ms + delta } : j === i + 1 ? { ...s, ms: s.ms - delta } : s,
+  );
+  if (nudged.some((s) => s.ms < 0)) return null;
+  const changeAt = solution.slice(0, i + 1).reduce((t, s) => t + s.ms, 0) + delta;
+  return playScript(level, truncate(nudged, changeAt + REACTION_MS));
+}

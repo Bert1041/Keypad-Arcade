@@ -245,6 +245,63 @@ describe('sizes and water', () => {
   });
 });
 
+describe('grates and ceiling spikes', () => {
+  it('a grate stops a normal ball but lets a small one through', () => {
+    const normal = createRebound([level(flat('S..H.o.E'))]);
+    run(normal, 2000, { move: 1, jump: false });
+    expect(normal.ball.x).toBe(4 * TILE - RADIUS.normal);
+
+    const small = createRebound([level(flat('Ss.H.o.E'))]);
+    const events = run(small, 3000, { move: 1, jump: false });
+    expect(events).toContainEqual(expect.objectContaining({ type: 'level-clear' }));
+  });
+
+  it('a small ball cannot grow inside a grate', () => {
+    // The grow pad sits in a grate-lined channel: growing would put a big ball inside solid bars.
+    const s = createRebound([
+      level(['##########', '#........#', '#..HHHHHH#', '#Ss.g..oE#', '##########']),
+    ]);
+    run(s, 3000, { move: 1, jump: false });
+    expect(s.ball.size).toBe('small');
+  });
+
+  it('ceiling spikes kill a ball that jumps into them, not one rolling beneath', () => {
+    const rows = (mid: string) => [
+      '########',
+      '#..vv..#',
+      '#......#',
+      '#......#',
+      `#${mid}#`,
+      '########',
+    ];
+    const under = createRebound([level(rows('S.o..E'))]);
+    expect(run(under, 2000, { move: 1, jump: false }).some((e) => e.type === 'died')).toBe(false);
+
+    const jumper = createRebound([level(rows('S.o..E'))]);
+    run(jumper, 300, { move: 1, jump: false });
+    const events = run(jumper, 600, { move: 0, jump: true });
+    expect(events.some((e) => e.type === 'died')).toBe(true);
+  });
+
+  it('small and big balls jump lower than a normal one', () => {
+    const peak = (pad: string) => {
+      const s = createRebound([level(flat(`S${pad}..o.E`, 12))]);
+      run(s, 400, { move: 1, jump: false });
+      run(s, 600);
+      const floor = s.ball.y;
+      let top = floor;
+      for (let t = 0; t < 1200; t += STEP_MS) {
+        tick(s, { move: 0, jump: true });
+        top = Math.min(top, s.ball.y);
+      }
+      return (floor - top) / TILE;
+    };
+    const normal = peak('.');
+    expect(peak('s')).toBeLessThan(normal - 0.6);
+    expect(peak('g')).toBeLessThan(normal - 0.6);
+  });
+});
+
 describe('moving platforms', () => {
   it('carry a ball standing on them', () => {
     const s = createRebound([

@@ -35,6 +35,7 @@ const COLOR = {
   stone: 0x2c3046,
   stoneTop: 0x5a6188,
   spikes: 0xcfd4e8,
+  grate: 0x7a82a8,
   water: 0x2f7bd6,
   ring: 0xffd23f,
   gem: 0xff7aa8,
@@ -502,6 +503,19 @@ export class ReboundScene extends Phaser.Scene {
                 y + TILE,
               );
             }
+            break;
+          case 'v':
+            g.fillStyle(COLOR.spikes);
+            for (let i = 0; i < 3; i++) {
+              g.fillTriangle(x + i * 8, y, x + i * 8 + 4, y + TILE / 2, x + i * 8 + 8, y);
+            }
+            break;
+          case 'H':
+            // Bars a small ball slips between.
+            g.fillStyle(COLOR.grate);
+            g.fillRect(x, y, TILE, 3);
+            g.fillRect(x, y + TILE - 3, TILE, 3);
+            for (let i = 0; i < 4; i++) g.fillRect(x + 2 + i * 6, y, 2, TILE);
             break;
           case '~':
             g.fillStyle(COLOR.water, 0.45);
