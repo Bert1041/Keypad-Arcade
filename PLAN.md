@@ -144,6 +144,7 @@ Update when a decision changes. Dates are when it was made.
 | Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |
 | Games (2026-10-25) | Neutral retro remakes, original names/art/levels | Phase 0 polls disagree |
 | Sharing (2026-10-25) | Client-only: share card + seeded challenge links, no backend | Leaderboards have evidence |
+| Backend (2026-10-25) | **None yet.** The monthly Hunt (docs/HUNT.md) needs one, so it waits; games, practice and playtesting continue | After the soft launch |
 | Analytics (2026-10-25) | Yes, privacy-respecting; **provider not chosen** | — |
 | Stack | React 19 + Phaser 3.90 + Vite 8 + TypeScript 6 + Dexie 4 + vite-plugin-pwa | — |
 | Phaser 3, not 4 | Brief specifies 3; 4 is six months old. Dependabot ignores Phaser majors | First real game is stable, or a Phaser 4 feature is needed |

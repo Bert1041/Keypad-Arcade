@@ -14,6 +14,7 @@ Not deployed.
 | [PLAN.md](PLAN.md) | Goals, phases, decisions, scope test, decision log |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it is built, where things live, the game-folder rules, testing, lessons learned, adding a game |
 | [docs/MANUAL_QA.md](docs/MANUAL_QA.md) | Real-phone checklist before any launch |
+| [docs/HUNT.md](docs/HUNT.md) | Plan: AI playtesting as a release gate, and the monthly cross-game Hunt (needs decisions first) |
 | [RETROBOX_GAME_CATALOGUE.md](RETROBOX_GAME_CATALOGUE.md) | Research: candidate games |
 | [README_RetroBox_updated.md](README_RetroBox_updated.md) | Original product and engineering brief |
 
