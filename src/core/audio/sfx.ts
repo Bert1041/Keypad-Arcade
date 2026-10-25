@@ -2,12 +2,22 @@ import type { SoundEffects } from '@/games/types';
 import { getSettings } from '@/core/settings/settings';
 
 let ctx: AudioContext | null = null;
+let resuming = false;
 
 function context(): AudioContext | null {
   if (typeof AudioContext === 'undefined') return null;
   ctx ??= new AudioContext();
-  // Mobile browsers start the context suspended until a user gesture.
-  if (ctx.state === 'suspended') void ctx.resume();
+  // Browsers start the context suspended until a user gesture. Ask once at a time, and expect
+  // refusals: Firefox rejects a pending resume when the page navigates away.
+  if (ctx.state === 'suspended' && !resuming) {
+    resuming = true;
+    ctx
+      .resume()
+      .catch(() => undefined)
+      .finally(() => {
+        resuming = false;
+      });
+  }
   return ctx;
 }
 
