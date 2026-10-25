@@ -18,7 +18,8 @@
     "knip": "knip --no-progress",
     "test:all": "npm run check && npm run e2e",
     "levels:solve": "sh scripts/rebound-levels/solve.sh",
-    "levels:trace": "tsx scripts/rebound-levels/trace.ts"
+    "levels:trace": "tsx scripts/rebound-levels/trace.ts",
+    "deploy": "npx --yes vercel@65.2.0 deploy --prod"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "5.3.0",

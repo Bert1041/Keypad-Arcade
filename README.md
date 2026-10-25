@@ -48,6 +48,7 @@ install and offline need https (see docs/MANUAL_QA.md).
 | `npm run format` | Format everything |
 | `npm run icons` | Re-render the PNG app icons from `public/icons/icon.svg` |
 | `E2E_FIREFOX=1 npm run e2e` | Include desktop Firefox locally (always on in CI) |
+| `npm run deploy` | Production deploy to Vercel (https://keypad-arcade-nine.vercel.app), pinned CLI via npx — not a dependency: its own tree carries 34 audit findings |
 
 CI (`.github/workflows/ci.yml`) runs a secret scan, a production-dependency audit, `check` and the
 browser tests on every push to `main` and on pull requests; WebKit weekly and on demand.

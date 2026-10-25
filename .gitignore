@@ -9,3 +9,4 @@ playwright-report
 # env files (none needed yet; never commit one)
 .env*
 !.env.example
+.vercel
