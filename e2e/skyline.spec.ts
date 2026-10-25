@@ -1,5 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { seededRandom } from '../src/core/random/seededRandom';
+import { replayRun } from '../src/games/skyline/verify';
 import { expectOneRunningGame } from './helpers';
 
 const debug = (page: Page) => page.evaluate(() => window.__SKYLINE_DEBUG__?.());
@@ -116,4 +118,28 @@ test('keyboard: Space starts, then drops', async ({ page, isMobile }) => {
   await page.keyboard.press('Space');
   // Landed or missed, the floor was dropped: the crane gets the next one.
   await expect.poll(async () => (await debug(page))?.drops).toBe(2);
+});
+
+test('the run the browser played replays on the server to the same score', async ({ page }) => {
+  await page.goto('/play/skyline');
+  await expectOneRunningGame(page);
+  await tap(page);
+  // Lined-up drops land a little off-centre, so the tower leans and sways: sin and cos are in play.
+  for (let floor = 1; floor <= 6; floor++) {
+    await tapWhenLinedUp(page);
+    await expect.poll(async () => (await debug(page))?.floors).toBe(floor);
+  }
+  for (let miss = 1; miss <= 3; miss++) {
+    await nextFloorSwings(page);
+    await tap(page);
+    await expect.poll(async () => (await debug(page))?.inHand).toBe(3 - miss);
+  }
+  await expect.poll(() => page.evaluate(() => window.__LAST_RUN__?.gameId)).toBe('skyline');
+  const run = await page.evaluate(() => window.__LAST_RUN__);
+  expect(run?.score).toBeGreaterThan(60);
+  // Node (the server's engine) replays what this browser recorded and must reach the same score.
+  expect(replayRun(seededRandom(run?.seed ?? 0), run?.replay)).toEqual({
+    ok: true,
+    score: run?.score,
+  });
 });

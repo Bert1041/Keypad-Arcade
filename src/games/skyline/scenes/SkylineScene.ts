@@ -20,6 +20,7 @@ import {
   type SkylineEvent,
   type SkylineState,
 } from '../logic/skyline';
+import type { SkylineReplay } from '../verify';
 import { FLOOR, FLOOR_PALETTES } from './sprites';
 
 export const WORLD_WIDTH = 360;
@@ -46,6 +47,9 @@ export class SkylineScene extends Phaser.Scene {
   private state!: SkylineState;
   private random!: RandomFn;
   private dropQueued = false;
+  /** Steps run so far, and the ones the player dropped on: the replay the leaderboard checks. */
+  private steps = 0;
+  private replay: SkylineReplay = { v: 1, drops: [] };
   private elapsed = 0;
   private started = false;
   private over = false;
@@ -81,6 +85,8 @@ export class SkylineScene extends Phaser.Scene {
     this.random = this.services.beginRun();
     this.state = createSkyline(this.random);
     this.dropQueued = false;
+    this.steps = 0;
+    this.replay = { v: 1, drops: [] };
     this.elapsed = 0;
     this.started = false;
     this.over = false;
@@ -179,6 +185,8 @@ export class SkylineScene extends Phaser.Scene {
         this.lastFall = this.state.falling && { ...this.state.falling };
         const drop = this.dropQueued;
         this.dropQueued = false;
+        this.steps += 1;
+        if (drop) this.replay.drops.push(this.steps);
         for (const event of tick(this.state, { drop }, this.random)) this.handle(event);
       }
     }
@@ -383,7 +391,7 @@ export class SkylineScene extends Phaser.Scene {
     this.over = true;
     this.retry.end(this.time.now);
     this.services.sfx.blip(110, 300);
-    this.services.onRunComplete({ score: this.state.score });
+    this.services.onRunComplete({ score: this.state.score, replay: this.replay });
     const isBest = this.state.score > this.best;
     this.best = Math.max(this.best, this.state.score);
     this.render();

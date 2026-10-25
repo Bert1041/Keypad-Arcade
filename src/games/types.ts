@@ -15,7 +15,22 @@ export type Orientation = 'portrait' | 'landscape' | 'any';
 
 export interface RunResult {
   score: number;
+  /**
+   * The run's inputs, JSON-serialisable and opaque to the shell, for games that can be replayed
+   * (see ReplayRun). The leaderboard server replays it and trusts only the score it gets itself.
+   */
+  replay?: unknown;
 }
+
+export type ReplayResult = { ok: true; score: number } | { ok: false; reason: string };
+
+/**
+ * A game's verify.ts: replays a finished run from its seed's generator and recorded inputs,
+ * with the game's own rules and no Phaser, and returns the score it reaches — or why the replay
+ * is not a valid finished run. Runs on the leaderboard server, so it must treat `replay` as
+ * hostile: validate its shape and bound its length.
+ */
+export type ReplayRun = (random: RandomFn, replay: unknown) => ReplayResult;
 
 export interface SoundEffects {
   /** Short synthesized tone. A no-op when sound is disabled in settings. */

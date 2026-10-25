@@ -132,7 +132,7 @@ Before adding any feature, answer:
 
 If it doesn't serve **play → share → a friend plays → they share**, defer it.
 
-Defer by default: accounts and cloud saves, online leaderboards, multiplayer, currencies or
+Defer by default: accounts and cloud saves, all-time leaderboards, multiplayer, currencies or
 loot, ads, a native app, more than three games before the share loop is measured.
 
 ## 9. Decision log
@@ -146,8 +146,9 @@ Update when a decision changes. Dates are when it was made.
 | Star Raid orientation (2026-10-25) | Vertical scrolling in portrait (Space Impact scrolled sideways) — the app is held upright | Players ask for landscape |
 | Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |
 | Games (2026-10-25) | Neutral retro remakes, original names/art/levels | Phase 0 polls disagree |
-| Sharing (2026-10-25) | Client-only: share card + seeded challenge links, no backend | Leaderboards have evidence |
-| Backend (2026-10-25) | **None yet.** The monthly Hunt (docs/HUNT.md) needs one, so it waits; games, practice and playtesting continue | After the soft launch |
+| Sharing (2026-10-25) | Client-only: share card + seeded challenge links | — |
+| Leaderboards (2026-10-25) | **Global daily boards** per game (Coil, Star Raid, Skyline — the games with a daily); nickname, no account. Every posted run is **replayed on the server** from its seed and inputs, and only the server's score is stored. Rebound has no daily, so no board | Players ask for all-time boards |
+| Backend (2026-10-25) | **Vercel Functions + Upstash Redis** (from Vercel's marketplace), for the leaderboards only. Scores and settings stay on the device. Replaces "none yet"; the Hunt can build on it later | Costs beyond the free tier |
 | Analytics (2026-10-25) | Yes, privacy-respecting; **provider not chosen** | — |
 | Stack | React 19 + Phaser 3.90 + Vite 8 + TypeScript 6 + Dexie 4 + vite-plugin-pwa | — |
 | Phaser 3, not 4 | Brief specifies 3; 4 is six months old. Dependabot ignores Phaser majors | First real game is stable, or a Phaser 4 feature is needed |

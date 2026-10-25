@@ -82,6 +82,9 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
   const onRunComplete = useCallback(
     (result: RunResult) => {
       setLastRun({ score: result.score, seed: seeds.current() });
+      if (import.meta.env.VITE_E2E === '1') {
+        window.__LAST_RUN__ = { gameId: game.id, seed: seeds.current(), ...result };
+      }
       recordRun(game.id, result.score)
         .then((s) => setBestScore(s.bestScore))
         .catch(() => {

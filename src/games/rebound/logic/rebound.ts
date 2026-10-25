@@ -1,4 +1,5 @@
 import { TILE, type Level, type PlatformDef } from './level';
+import { cos } from '@/games/shared/detMath';
 
 /**
  * Rebound's rules: a fixed-step simulation with no Phaser in it. tick() runs 60 times per
@@ -189,7 +190,7 @@ export function tileAt(level: Level, tx: number, ty: number) {
 /** Where a moving platform is at `ms`: there and back, smoothly. */
 export function platformAt(p: PlatformDef, ms: number) {
   const phase = (ms % p.periodMs) / p.periodMs;
-  const t = (1 - Math.cos(phase * Math.PI * 2)) / 2; // 0 → 1 → 0, easing at the ends
+  const t = (1 - cos(phase * Math.PI * 2)) / 2; // 0 → 1 → 0, easing at the ends
   return { x: (p.x + p.dx * t) * TILE, y: (p.y + p.dy * t) * TILE, w: p.width * TILE, h: TILE };
 }
 

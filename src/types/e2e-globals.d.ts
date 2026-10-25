@@ -19,6 +19,8 @@ declare global {
       y: number;
       over: boolean;
     };
+    /** The last finished run as the game reported it, replay included (leaderboard tests). */
+    __LAST_RUN__?: { gameId: string; seed: number; score: number; replay?: unknown };
     /** Skyline: a read-only look at the run. */
     __SKYLINE_DEBUG__?: () => {
       started: boolean;

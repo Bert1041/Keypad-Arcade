@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { seededRandom } from '../src/core/random/seededRandom';
 import { createCoil, queueTurn, step, type Dir } from '../src/games/coil/logic/coil';
 import { expect, test } from './fixtures';
+import { replayRun as replayCoil } from '../src/games/coil/verify';
 import { captureShares, expectOneRunningGame, readDb, shares } from './helpers';
 
 // Seeds where a single straight move eats two pellets before the wall, so matching the score
@@ -84,4 +85,27 @@ test('arrow keys play on desktop, and the result can be shared as a challenge', 
   await page.getByTestId('share-button').click();
   await expect.poll(async () => (await shares(page)).length).toBe(1);
   expect((await shares(page))[0]?.text).toContain(`/play/coil?seed=${SEED_UP}&beat=`);
+});
+
+test('the run the browser played replays on the server to the same score', async ({ page }) => {
+  // SEED_UP: heading straight up eats two pellets, so the run scores — and a replay that applied
+  // the first turn even one step late would move a column over and miss them.
+  await page.goto(`/play/coil?seed=${SEED_UP}&beat=999`);
+  await expectOneRunningGame(page);
+  await swipe(page, 0, -120);
+  await page.waitForTimeout(1_100);
+  // Two quick turns (the turn queue), then on into a wall.
+  await swipe(page, 120, 0);
+  await swipe(page, 0, 120);
+  await expect
+    .poll(() => page.evaluate(() => window.__LAST_RUN__?.gameId), { timeout: 20_000 })
+    .toBe('coil');
+  const run = await page.evaluate(() => window.__LAST_RUN__);
+  const replay = run?.replay as { turns?: unknown[] } | undefined;
+  expect(replay?.turns?.length).toBeGreaterThanOrEqual(3);
+  expect(run?.score).toBeGreaterThan(0);
+  expect(replayCoil(seededRandom(run?.seed ?? 0), run?.replay)).toEqual({
+    ok: true,
+    score: run?.score,
+  });
 });

@@ -90,6 +90,20 @@ describe('a game is self-contained', () => {
     expect(offenders).toEqual([]);
   });
 
+  it.each(gameFolders)('%s game logic uses only maths every engine computes alike', (id) => {
+    // The leaderboard server replays runs in Node; a result one bit different from Safari's
+    // rejects an honest score. Use sin/cos from @/games/shared/detMath, and x * x for powers.
+    const banned =
+      /Math\.(sin|cos|tan|asin|acos|atan2?|sinh|cosh|tanh|asinh|acosh|atanh|exp|expm1|log|log2|log10|log1p|pow|hypot|cbrt)\b|\*\*/;
+    const logic = ['logic', 'levels'].map((dir) => join(GAMES, id, dir));
+    const offenders = logic
+      .filter((dir) => statSync(dir, { throwIfNoEntry: false })?.isDirectory())
+      .flatMap((dir) => sourceFiles(dir))
+      .filter((file) => banned.test(code(file)))
+      .map(rel);
+    expect(offenders).toEqual([]);
+  });
+
   it.each(gameFolders)('%s uses only the seeded random from beginRun()', (id) => {
     // Any other randomness makes a challenge link replay a different run.
     const banned = /Math\.random\s*\(|crypto\.getRandomValues|crypto\.randomUUID/;

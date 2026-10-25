@@ -20,6 +20,7 @@ import {
   type RaidInput,
   type RaidState,
 } from '../logic/raid';
+import type { RaidReplay } from '../verify';
 import { ENEMIES, PALETTE, POWER_COLOR, POWER_LABEL, POWER_UPS, SHIP } from './sprites';
 
 export const WORLD_WIDTH = WIDTH;
@@ -42,6 +43,10 @@ export class RaidScene extends Phaser.Scene {
   private keysDown = new Set<'left' | 'right'>();
   private drag: { pointerX: number; shipX: number } | null = null;
   private elapsed = 0;
+  /** Steps run so far, and each change of input with the step it took effect: the replay. */
+  private steps = 0;
+  private replay: RaidReplay = { v: 1, input: [] };
+  private recorded: RaidInput = NO_INPUT;
   private started = false;
   private over = false;
   private retry = new RetryGate(RETRY_DELAY_MS);
@@ -68,6 +73,9 @@ export class RaidScene extends Phaser.Scene {
     this.random = this.services.beginRun();
     this.state = createRaid();
     this.input_ = NO_INPUT;
+    this.steps = 0;
+    this.replay = { v: 1, input: [] };
+    this.recorded = NO_INPUT;
     this.keysDown.clear();
     this.drag = null;
     this.elapsed = 0;
@@ -116,7 +124,9 @@ export class RaidScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       // Relative steering: the ship moves with the finger, never under it.
       if (this.drag && p.isDown) {
-        this.input_ = { targetX: this.drag.shipX + (p.x - this.drag.pointerX), axis: 0 };
+        // Whole pixels: invisible in play, and keeps the replay small and exact.
+        const targetX = Math.round(this.drag.shipX + (p.x - this.drag.pointerX));
+        this.input_ = { targetX, axis: 0 };
       }
     });
     this.input.on('pointerup', () => {
@@ -157,7 +167,13 @@ export class RaidScene extends Phaser.Scene {
     this.elapsed += Math.min(delta, MAX_FRAME_MS);
     while (this.elapsed >= STEP_MS && !this.over) {
       this.elapsed -= STEP_MS;
-      for (const event of tick(this.state, this.input_, this.random)) this.handle(event);
+      this.steps += 1;
+      const input = this.input_;
+      if (input.targetX !== this.recorded.targetX || input.axis !== this.recorded.axis) {
+        this.replay.input.push([this.steps, input.targetX, input.axis]);
+        this.recorded = input;
+      }
+      for (const event of tick(this.state, input, this.random)) this.handle(event);
     }
     this.render(time);
   }
@@ -343,7 +359,7 @@ export class RaidScene extends Phaser.Scene {
     this.over = true;
     this.retry.end(this.time.now);
     this.services.sfx.blip(110, 300);
-    this.services.onRunComplete({ score: this.state.score });
+    this.services.onRunComplete({ score: this.state.score, replay: this.replay });
     const isBest = this.state.score > this.best;
     this.best = Math.max(this.best, this.state.score);
     this.render(this.time.now);

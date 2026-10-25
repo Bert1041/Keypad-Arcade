@@ -1,4 +1,5 @@
 import type { RandomFn } from '@/games/types';
+import { cos, sin } from '@/games/shared/detMath';
 
 /**
  * Skyline's rules: a fixed-step simulation with no Phaser in it. The scene calls tick() 60 times
@@ -143,7 +144,7 @@ export function crossSpeed(height: number): number {
  */
 export function swingFor(periodMs: number, speed: number): number {
   const omega = (2 * Math.PI) / (periodMs / 1000);
-  return speed / (omega * Math.sqrt(1 + (CARRY * omega * FALL_S) ** 2));
+  return speed / (omega * Math.sqrt(1 + CARRY * omega * FALL_S * (CARRY * omega * FALL_S)));
 }
 
 export function topX(state: SkylineState): number {
@@ -152,7 +153,7 @@ export function topX(state: SkylineState): number {
 
 /** How far the top of the tower is displaced from its rest position at `timeMs`. */
 export function swayAt(state: SkylineState, timeMs: number): number {
-  return Math.min(MAX_SWAY, state.lean) * Math.sin((2 * Math.PI * timeMs) / SWAY_MS);
+  return Math.min(MAX_SWAY, state.lean) * sin((2 * Math.PI * timeMs) / SWAY_MS);
 }
 
 /** The hooked floor's centre and sideways speed (px/s) now; at its start until it swings. */
@@ -161,8 +162,8 @@ export function hookAt(state: SkylineState): { x: number; vx: number } {
   const omega = (2 * Math.PI) / periodMs;
   const t = Math.max(0, state.timeMs - spawnMs);
   return {
-    x: topX(state) + side * amplitude * Math.cos(omega * t),
-    vx: -side * amplitude * omega * 1000 * Math.sin(omega * t),
+    x: topX(state) + side * amplitude * cos(omega * t),
+    vx: -side * amplitude * omega * 1000 * sin(omega * t),
   };
 }
 

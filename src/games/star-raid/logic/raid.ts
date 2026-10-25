@@ -1,4 +1,5 @@
 import type { RandomFn } from '@/games/types';
+import { sin } from '@/games/shared/detMath';
 
 /**
  * Star Raid's rules: a fixed-step simulation with no Phaser in it. The scene calls tick() 60
@@ -301,7 +302,7 @@ export function tick(state: RaidState, input: RaidInput, random: RandomFn): Raid
     enemy.ageMs += STEP_MS;
     enemy.y += enemy.speed * dt;
     enemy.cx =
-      enemy.kind === 'weaver' ? enemy.x + Math.sin(enemy.ageMs / 450) * enemy.amplitude : enemy.x;
+      enemy.kind === 'weaver' ? enemy.x + sin(enemy.ageMs / 450) * enemy.amplitude : enemy.x;
     if (enemy.kind === 'gunner') {
       enemy.nextShotMs -= STEP_MS;
       if (enemy.nextShotMs <= 0 && enemy.y > 0 && enemy.y < SHIP_Y - 60) {

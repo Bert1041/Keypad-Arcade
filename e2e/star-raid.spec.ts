@@ -8,6 +8,7 @@ import {
   type RaidInput,
 } from '../src/games/star-raid/logic/raid';
 import { expect, test } from './fixtures';
+import { replayRun as replayRaid } from '../src/games/star-raid/verify';
 import { expectOneRunningGame, readDb } from './helpers';
 
 // Fixture seeds, found by simulation: each run ends within ~20 s and scores, so matching the
@@ -91,4 +92,34 @@ test('Space starts the run on desktop', async ({ page, isMobile }) => {
   await expect
     .poll(() => lastScore(page), { timeout: 40_000 })
     .toBe(String(predicted(SEED_IDLE, NO_INPUT)));
+});
+
+test('the run the browser played replays on the server to the same score', async ({ page }) => {
+  // A run lasts 20–70 s, longer when the browser is slow under a full parallel suite.
+  test.setTimeout(180_000);
+  await page.goto(`/play/star-raid?seed=${SEED_IDLE}&beat=9999`);
+  await expectOneRunningGame(page);
+  const box = await page.locator('canvas').boundingBox();
+  if (!box) throw new Error('no canvas');
+  const y = box.y + box.height * 0.8;
+  // Weave with a finger for a few seconds (weavers sway with sin), then let go and let it end.
+  await page.mouse.move(box.x + box.width / 2, y);
+  await page.mouse.down();
+  for (let i = 0; i < 4; i++) {
+    await page.mouse.move(box.x + box.width * (i % 2 ? 0.2 : 0.8), y, { steps: 10 });
+    await page.waitForTimeout(250);
+  }
+  await page.mouse.up();
+  await expect
+    .poll(() => page.evaluate(() => window.__LAST_RUN__?.gameId), {
+      timeout: 150_000,
+      message: 'the run had not ended yet (a time limit, not a replay mismatch)',
+    })
+    .toBe('star-raid');
+  const run = await page.evaluate(() => window.__LAST_RUN__);
+  expect(run?.score).toBeGreaterThan(0);
+  expect(replayRaid(seededRandom(run?.seed ?? 0), run?.replay)).toEqual({
+    ok: true,
+    score: run?.score,
+  });
 });

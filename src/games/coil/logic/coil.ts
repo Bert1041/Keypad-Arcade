@@ -32,6 +32,10 @@ export interface CoilState {
 
 export type StepEvent = 'ate' | 'ate-bonus' | 'bonus-appeared' | 'bonus-expired' | 'died';
 
+/** The board, in cells. The scene draws it; replays on the server need it too. */
+export const COLS = 15;
+export const ROWS = 22;
+
 export const FOOD_POINTS = 10;
 export const BONUS_POINTS = 50;
 /** A bonus appears after every this-many pellets. */

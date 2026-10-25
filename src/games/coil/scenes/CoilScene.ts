@@ -5,6 +5,8 @@ import { isForShellControl } from '@/games/shared/input';
 import { RetryGate } from '@/games/shared/retry';
 import { BODY_FONT, INK, PIXEL_FONT } from '@/games/shared/style';
 import {
+  COLS,
+  ROWS,
   createCoil,
   queueTurn,
   step,
@@ -14,14 +16,14 @@ import {
   type Dir,
 } from '../logic/coil';
 import { swipeDirection } from '../logic/swipe';
+import type { CoilReplay } from '../verify';
 
 export const WORLD_WIDTH = 360;
 export const WORLD_HEIGHT = 600;
 
-const CELL = 24;
-const COLS = WORLD_WIDTH / CELL; // 15
-const ROWS = 22;
+const CELL = WORLD_WIDTH / COLS; // 24
 const BOARD_Y = 48;
+const DIR_CODE = { up: 'u', down: 'd', left: 'l', right: 'r' } as const;
 /** Ignore input briefly after game over so the losing swipe does not also restart. */
 const RETRY_DELAY_MS = 500;
 /** A long pause (tab hidden, slow frame) must not fast-forward the snake into a wall. */
@@ -52,6 +54,9 @@ export class CoilScene extends Phaser.Scene {
   private state!: CoilState;
   private random!: RandomFn;
   private elapsed = 0;
+  /** Steps taken so far, and each turn with the step it came before: the replay. */
+  private steps = 0;
+  private replay: CoilReplay = { v: 1, turns: [] };
   private started = false;
   private over = false;
   private retry = new RetryGate(RETRY_DELAY_MS);
@@ -72,6 +77,8 @@ export class CoilScene extends Phaser.Scene {
     this.random = this.services.beginRun();
     this.state = createCoil(this.random, COLS, ROWS);
     this.elapsed = 0;
+    this.steps = 0;
+    this.replay = { v: 1, turns: [] };
     this.started = false;
     this.over = false;
     this.swipeStart = null;
@@ -144,6 +151,7 @@ export class CoilScene extends Phaser.Scene {
   private turn(dir: Dir) {
     if (this.over) return;
     this.state = queueTurn(this.state, dir);
+    this.replay.turns.push([this.steps, DIR_CODE[dir]]);
     if (!this.started) {
       // Any first move starts the run; one into the body (left) just starts it heading right.
       this.started = true;
@@ -154,6 +162,7 @@ export class CoilScene extends Phaser.Scene {
   private advance() {
     const { state, events } = step(this.state, this.random);
     this.state = state;
+    this.steps += 1;
     for (const event of events) {
       switch (event) {
         case 'ate':
@@ -248,7 +257,7 @@ export class CoilScene extends Phaser.Scene {
     this.over = true;
     this.retry.end(this.time.now);
     this.services.sfx.blip(110, 300);
-    this.services.onRunComplete({ score: this.state.score });
+    this.services.onRunComplete({ score: this.state.score, replay: this.replay });
 
     const isBest = this.state.score > this.best;
     this.best = Math.max(this.best, this.state.score);
