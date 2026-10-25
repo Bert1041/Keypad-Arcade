@@ -288,6 +288,70 @@ Draft and preview; test clues and validators in a sandbox; schedule start, end a
 publish a version; review stage completions and suspicious submissions; pause during an exploit
 or outage; release an official hint; close and publish a summary; start next month's draft.
 
+### What makes a good Hunt: meaning, not random
+
+A Hunt is not a pile of hidden symbols. Each one tells **one true story**, and players reason
+their way through it. Solving it should feel like understanding something, not like guessing a
+password.
+
+1. **One real theme a month,** from history: an invention, a journey, a discovery, a person
+   whose work changed things. The player should finish having learned something true.
+2. **A chain of reasoning.** Each answer is the key to the next clue — a year points to an event,
+   the event to a person, the person to a place. Every step is an "aha", never a coin toss, and
+   answers cannot be brute-forced (a large answer space now; server rate limits later).
+3. **Fair.** Solvable from the in-game clues plus general knowledge and public sources (an
+   encyclopedia, a library). No paywalled or obscure trivia. Each clue has exactly one defensible
+   answer, and reasonable spellings are accepted (`dundun`, `dùndún`, `talking drum`).
+4. **Fact-checked.** Every fact is confirmed by two reputable sources, cited in the campaign file.
+   Avoid facts whose dates or details sources disagree on.
+5. **Respectful.** Never turn tragedies, wars or atrocities into a game mechanic. Represent
+   cultures accurately — ideally reviewed by someone from that culture.
+6. **Varied.** Rotate eras and regions. African history should appear often — it is our first
+   audience — alongside the rest of the world.
+7. **Accessible.** Never a colour-only or sound-only clue: every clue has a second channel (a
+   blinking pattern is also a sound, and also written in the player's clue journal).
+8. **Hints that teach.** Hint 1 names the field ("think about how messages travelled"), hint 2
+   the method ("it's a code with two lengths"), hint 3 is nearly the answer.
+9. **Never in the way.** Clues appear after normal milestones; ordinary play is never blocked or
+   slowed for someone ignoring the Hunt.
+10. **Secret until released.** This repository is **public**. A real Hunt's clues, answers and
+    sources never go in it — they live in private storage and reach players only when released
+    by the server (which is why the Hunt waits for a backend).
+
+### Example Hunt — "Before the Ring"
+
+> **Example only.** Because this file is public, this Hunt must **never be run live**. It shows
+> the shape a real one should take.
+
+**Theme:** how people have sent messages across distance — the history of the device Keypad
+Arcade is named after. Every stage connects to the next by reasoning.
+
+| Stage | Where | What the player sees | What they must reason |
+|---|---|---|---|
+| 1 | Rebound | A hidden room behind a grate, reachable only small. Its rings are arranged as a drum rhythm of high and low notes; the clue journal says: *"Before wires, the forest carried words. Which drum speaks the tones of Yoruba?"* | Yoruba is a tonal language; the **dùndún** (talking drum) imitates its tones to carry messages between towns. |
+| 2 | Coil | On the drum-day's seed, the bonus bug blinks in long and short pulses (also played as sound, and written in the journal). | Two lengths of signal is **Morse code**; decoded it reads **1844** — the year of the first public telegraph message, sent by Samuel Morse from Washington to Baltimore: *"What hath God wrought"*. |
+| 3 | Star Raid | After the third carrier, a formation of drones spells **0403** before breaking apart. Journal: *"129 years after the wire, the first call was made without one. Who made it?"* | 1844 + 129 = **1973**. 3 April 1973, New York: **Martin Cooper** of Motorola makes the first call from a handheld mobile phone. |
+| Final | The library's keypad | A locked screen showing a phone keypad. Journal: *"Drum, wire, call — one step remains. What were the first words ever sent as a text message?"* | On **3 December 1992**, engineer Neil Papworth sent the first SMS: **"Merry Christmas"**. The player types it multi-tap style (2 = ABC, 7 = PQRS…) on the keypad — the way people texted on the phones this app remembers. |
+
+**Why it works:** each answer unlocks the next (drum → code → year → call → text); every fact can
+be checked in an encyclopedia; the story ends on the keypad itself; and the final input is
+something players of that era will remember doing with their thumbs.
+
+**Facts to confirm with two sources each before any real use:** the dùndún as a speech surrogate
+for Yoruba; Morse's 24 May 1844 message and its wording; Martin Cooper's call on 3 April 1973 in
+New York; Neil Papworth's "Merry Christmas" SMS on 3 December 1992.
+
+### Hunt draft checklist
+
+- [ ] One true story; a player can say in one sentence what they learned.
+- [ ] Every stage's answer is needed for the next; none can be guessed or brute-forced.
+- [ ] Every fact has two cited sources (in the private campaign file).
+- [ ] Every clue has a second, non-colour, non-sound channel.
+- [ ] Three hints per stage, from field to method to near-answer.
+- [ ] Reviewed for cultural accuracy and respect.
+- [ ] Played through by someone who did not write it, without hints, before release.
+- [ ] Nothing about it is in the public repository.
+
 ### Versioning rule
 
 Never silently change a live Hunt's solution or requirements. Changes are a new version. If a
