@@ -5,6 +5,9 @@ import { APP_NAME } from './src/appInfo.ts';
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
+  // The leaderboard API: Vercel serves /api in production; locally scripts/dev-api.ts does.
+  server: { proxy: { '/api': 'http://localhost:8788' } },
+  preview: { proxy: { '/api': 'http://localhost:8788' } },
   build: {
     // The Phaser chunk is expected to be large; scripts/check-budget.ts guards what matters.
     chunkSizeWarningLimit: 1300,
@@ -32,6 +35,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // /api is the leaderboard server: never answer it from the cache with the app's page.
+        navigateFallbackDenylist: [/^\/api\//],
         // Game chunks are lazy-loaded but must still be precached, or a game opened offline fails.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // Phaser alone is over Workbox's 2 MiB default.

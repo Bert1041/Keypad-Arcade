@@ -48,6 +48,11 @@ install and offline need https (see docs/MANUAL_QA.md).
 | `npm run format` | Format everything |
 | `npm run icons` | Re-render the PNG app icons from `public/icons/icon.svg` |
 | `E2E_FIREFOX=1 npm run e2e` | Include desktop Firefox locally (always on in CI) |
+| `npm run redis:test` | Start the leaderboard tests' database: Redis on 6390 + Upstash's REST adapter on 8079 (needs `redis-server` and Docker) |
+| `npm run test:server` | Leaderboard server tests, against that real Redis |
+| `npm run e2e:leaderboard` | Leaderboard browser tests (local API + that Redis; clocks fixed after Daily #1) |
+| `npm run api:dev` | The leaderboard API locally on 8788; `npm run dev` and `vite preview` proxy `/api` to it |
+| `npm run build:api` | Re-bundle `server/` into `api/` (committed; CI fails if stale — run after changing server or game rules) |
 | `npm run deploy` | Production deploy to Vercel (https://keypad-arcade-nine.vercel.app), pinned CLI via npx — not a dependency: its own tree carries 34 audit findings |
 
 CI (`.github/workflows/ci.yml`) runs a secret scan, a production-dependency audit, `check` and the
@@ -61,3 +66,6 @@ browser tests on every push to `main` and on pull requests; WebKit weekly and on
 - Anything stored or rendered is verified in a real browser, not only against mocks.
 - Never change `DB_NAME` or a released game id: saved scores are keyed by them.
 - Record major decisions in PLAN.md's decision log.
+- Game logic uses only maths every engine computes alike (`@/games/shared/detMath` for sin/cos):
+  the leaderboard replays runs in Node, and one bit of difference rejects an honest score.
+- After changing `server/` or any game's rules, run `npm run build:api` and commit `api/`.

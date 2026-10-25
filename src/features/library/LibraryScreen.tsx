@@ -35,9 +35,14 @@ export function LibraryScreen() {
     <main className={styles.screen}>
       <header className={styles.header}>
         <h1 className={`${styles.logo} pixel`}>{APP_NAME}</h1>
-        <Link to="/settings" className={styles.settings}>
-          Settings
-        </Link>
+        <nav className={styles.nav}>
+          <Link to="/boards" className={styles.settings} data-testid="boards-link">
+            Boards
+          </Link>
+          <Link to="/settings" className={styles.settings}>
+            Settings
+          </Link>
+        </nav>
       </header>
       <p className={styles.tagline}>The games from your old phone, rebuilt.</p>
       <ul className={styles.grid}>

@@ -16,6 +16,10 @@
   line-height: 1.5;
   color: var(--accent);
 }
+.nav {
+  display: flex;
+  gap: 12px;
+}
 .settings {
   color: var(--text-muted);
   font-size: 15px;

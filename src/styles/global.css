@@ -17,7 +17,8 @@ body {
 a {
   color: inherit;
 }
-button {
+button,
+.button {
   font: inherit;
   font-weight: 600;
   color: var(--text);
@@ -27,6 +28,13 @@ button {
   padding: 8px 14px;
   min-height: 44px;
   cursor: pointer;
+}
+/* A link that does what a button looks like it does (opens a screen). */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 button:active {
   border-color: var(--text-muted);

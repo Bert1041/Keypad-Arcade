@@ -4,11 +4,16 @@ import type { GameDefinition } from '@/games/types';
 import { challengeUrl, type Challenge } from '@/core/challenge/challenge';
 import { renderShareCard } from '@/core/share/shareCard';
 import { shareRun, type ShareOutcome } from '@/core/share/share';
+import { PostToBoard } from '@/features/leaderboard/PostToBoard';
 import styles from './GamePlayerScreen.module.css';
 
 export interface FinishedRun {
   score: number;
   seed: number;
+  /** The run's inputs, for the leaderboard (the server replays them). */
+  replay?: unknown;
+  /** Counts up per finished run, so a retry that scores the same is still a new run. */
+  id: number;
 }
 
 interface Props {
@@ -75,6 +80,17 @@ export function RunBar({ game, challenge, lastRun }: Props) {
       <span className={styles.runStatus} data-testid="run-status" role="status">
         {note || status(challenge, lastRun)}
       </span>
+      {lastRun && challenge?.daily && lastRun.replay !== undefined && (
+        // Keyed by the run, so a new run gets a fresh Post button.
+        <PostToBoard
+          key={lastRun.id}
+          game={game.id}
+          date={challenge.daily.date}
+          score={lastRun.score}
+          replay={lastRun.replay}
+          onStatus={setNote}
+        />
+      )}
       {lastRun && (
         <button
           type="button"

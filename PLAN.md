@@ -116,6 +116,7 @@ browser; the first-load budget is enforced in the build.
 |---|---|---|
 | **D1** | Allow client-only share cards + challenge links in V1 (README currently excludes social features) | ✅ **Decided: yes** (2026-10-25). Built — see §3 status |
 | **D2** | Naija-themed originals vs. neutral retro remakes | ✅ **Decided: neutral retro remakes** (2026-10-25) |
+| **D5** | Global leaderboards | ✅ **Decided** (2026-10-25): daily boards per game, server-replayed runs, nickname only, Vercel + Upstash. **Built**; needs the Upstash integration connected (§9) |
 | **D3** | Privacy-respecting analytics (e.g. Plausible/Umami: count runs and shares, no personal data) | ✅ **Decided: yes** (2026-10-25). **Open: which provider** — needs your account. Then a privacy note. |
 | **D4** | Product name | ✅ **Decided: Keypad Arcade** (2026-10-25). Domain/trademark **not yet checked**. |
 

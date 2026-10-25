@@ -81,7 +81,12 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
 
   const onRunComplete = useCallback(
     (result: RunResult) => {
-      setLastRun({ score: result.score, seed: seeds.current() });
+      setLastRun((previous) => ({
+        score: result.score,
+        seed: seeds.current(),
+        replay: result.replay,
+        id: (previous?.id ?? 0) + 1,
+      }));
       if (import.meta.env.VITE_E2E === '1') {
         window.__LAST_RUN__ = { gameId: game.id, seed: seeds.current(), ...result };
       }

@@ -17,15 +17,19 @@ Browser (installable PWA)
 ├── Game modules ────────── src/games/<id>/ — rules, scenes, art; know nothing about React
 │
 ├── Core services ───────── scores + settings (IndexedDB via Dexie), sound, seeded random,
-│                           challenge links, share card
+│                           challenge links, share card, leaderboard client
 └── Service worker ──────── precaches the shell and every game chunk for offline play
+
+Vercel Functions (api/, built from server/) ── daily leaderboards on Upstash Redis
 ```
 
 - **React owns the app; Phaser owns gameplay.** React never runs per-frame logic; a game never
   touches React, storage or the URL.
 - **Phaser loads only when a game opens** (~320 KB gz). The library's first load is budgeted at
   150 KB gz and the build fails above it (`scripts/check-budget.ts`).
-- **No backend.** Scores and settings live on the device. Sharing and challenges are links.
+- **One small backend: the daily leaderboards.** Scores and settings live on the device; sharing
+  and challenges are links. Posting a daily run to its board is the only thing that talks to a
+  server (§7a).
 
 ## 2. Where things live
 
@@ -174,6 +178,41 @@ written by version n−1.
 `registerType: 'prompt'`: the "new version" prompt appears only in the library, never during a run.
 The offline e2e test proves a game that was never opened online still starts offline.
 
+## 7a. Daily leaderboards
+
+One board per game with a daily (Coil, Star Raid, Skyline), per UTC day. Players have no
+account: a random 256-bit secret on the device (only a hash of it is stored, neither is ever
+returned) and a 3–12 character nickname (`server/nickname.ts`).
+
+**Nothing the phone says is trusted.** A post carries the run's *inputs* (`RunResult.replay`),
+recorded by the scene against the game's own clock. The server rebuilds the day's seed itself,
+replays the inputs with the game's rules (`src/games/<id>/verify.ts`, pure, no Phaser) and keeps
+only the score that replay reaches; a mismatch with the claimed score is refused.
+
+That only works if every engine computes a run identically: Node on the server, V8 and
+JavaScriptCore on phones. `+ − × ÷`, `Math.sqrt`, `round`, `floor` are exact by spec;
+`Math.sin`, `cos`, `pow`, `exp`… are not. Game logic uses `@/games/shared/detMath` (pinned by
+golden values), a guard test bans the others in `logic/` and `levels/`, and an e2e test per game
+replays a run played in each browser in Node to the identical score.
+
+| | |
+|---|---|
+| Accepts | Today's daily; yesterday's for 15 minutes after midnight UTC |
+| Ranking | A player's best; equal scores first-come (the sorted-set score carries the time) |
+| Limits | 20 posts/min per address, 300/day per player, 400 KB bodies; replays are length-bounded |
+| Storage | Upstash Redis (Vercel marketplace): `ka:lb:<game>:<date>` sorted sets, nicknames; kept 8 days |
+| Not stopped | A bot: the seed is public and the rules are open, so a perfect run can be computed offline and posted. Replays stop *impossible* scores, not superhuman ones |
+
+**Why `api/` is committed:** Vercel's TypeScript functions resolve neither the `@/` alias nor the
+extensionless imports game code uses — the function crashed on load. Vite bundles `server/` into
+self-contained files in `api/` (`vite.api.config.ts`); Vercel finds functions before the build
+runs, so the bundle is committed and CI rebuilds it and fails if it differs.
+
+Tests run against a real Redis behind Upstash's REST adapter, never a mock: `npm run
+test:server` (handlers, replays, limits, ranking) and `npm run e2e:leaderboard` (post from a
+played run, the board, offline, accessibility). A guard test keeps `server/` from importing
+anything but each game's `verify.ts` and pure core modules.
+
 ## 8. Testing
 
 | Layer | Command | Runs against |
@@ -224,6 +263,8 @@ Habits:
 | Pads you could jump over, tunnels too low to hop in, ferries ending a tile short, 5-wide pits off walls | Level design | Found by the solver: a level it cannot solve fairly gets redesigned |
 | Offline was only proven for the test prototype | One game's chunk loading offline says nothing about the others | The offline test opens every game; dropping one game's chunk from the cache fails it |
 | Keys pressed on the pause screen started a run behind it | Phaser queues keys while paused and replays them on resume | Pausing turns the game's input off; the test presses keys with focus off the buttons, the only path that reaches the game |
+| Vercel functions crashed on load though `vercel build` succeeded | Its TypeScript handling left the `@/` alias and extensionless imports unresolved; only loading the built output showed it | Bundle `server/` with Vite into committed `api/`; CI checks it is current |
+| A "different input gives a different result" test passed for the wrong reason | On a short Skyline run the seed only picks each floor's starting side, and a lined-up tap is the same step either way | Tests that need the seed to matter play past 20 floors (wind) or use Coil |
 | Skyline felt buggy: a floor dropped when it looked lined up missed | Floors kept the swing's full speed and drifted ~37 px; the fairness tests proved a landing window existed, not that it was where a player looks | Floors keep 15% of it; a test at every stage and an e2e test that taps on the frame a floor is drawn lined up |
 
 ## 10. Adding a game: checklist
@@ -234,6 +275,9 @@ Habits:
 3. Put rules in `logic/` with unit tests; scenes stay thin.
 4. Randomness only from `beginRun()`; report every finished run; Esc exits; respect
    `isForShellControl`; call `trackPhaserGame()` on the game you create.
+   With a daily (`daily: true`) it gets a board: record the inputs your rules consume, report
+   them as `replay`, add a `verify.ts`, register it in `server/leaderboard.ts`, and add an e2e
+   test that replays a browser-played run in Node to the same score.
 5. Add its id to `GAME_IDS` in `e2e/helpers.ts` (lifecycle tests run per game), and give it a
    spec like `e2e/coil.spec.ts`: a seed whose run scores, predicted by the game's own logic.
 6. Mutation-check each new test. Run `npm run check` and `npm run e2e`.

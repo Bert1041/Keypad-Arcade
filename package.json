@@ -23,7 +23,9 @@
     "build:api": "vite build --config vite.api.config.ts",
     "api:check": "npm run build:api && git diff --exit-code --stat -- api && test -z \"$(git ls-files --others --exclude-standard api)\"",
     "test:server": "vitest run --config vitest.server.config.ts",
-    "redis:test": "sh scripts/test-redis.sh"
+    "redis:test": "sh scripts/test-redis.sh",
+    "e2e:leaderboard": "E2E_LEADERBOARD=1 playwright test --workers=1 --project=leaderboard-android --project=leaderboard-iphone",
+    "api:dev": "tsx --tsconfig tsconfig.node.json scripts/dev-api.ts"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "5.3.0",

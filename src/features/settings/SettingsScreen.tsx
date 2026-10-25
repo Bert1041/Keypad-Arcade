@@ -1,6 +1,7 @@
 import { TopBar } from '@/components/TopBar';
 import { setSoundEnabled, useSettings } from '@/core/settings/settings';
 import { useLeave } from '@/app/useLeave';
+import { NicknameRow } from './NicknameRow';
 import styles from './SettingsScreen.module.css';
 
 export function SettingsScreen() {
@@ -20,8 +21,12 @@ export function SettingsScreen() {
             data-testid="sound-toggle"
           />
         </label>
+        <NicknameRow />
         <p className={styles.note}>
-          Scores are saved on this device only. Clearing your browser data removes them.
+          Your scores and settings are saved on this device. Clearing your browser data removes
+          them. When you post a daily run to a board, we receive your nickname, that run (its score
+          and moves) and a random ID made on this device — no account, email or location. Boards are
+          public and kept for about a week.
         </p>
       </div>
     </main>

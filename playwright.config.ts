@@ -1,8 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import { LEADERBOARD_NOW } from './e2e/leaderboardClock';
 
 const PORT = 4173;
 const DEV_PORT = 5179;
 const isCI = !!process.env.CI;
+/**
+ * The leaderboard tests need the local API and test Redis (npm run redis:test), so they run on
+ * their own: npm run e2e:leaderboard. Their clock is fixed after Daily #1 — browser and server.
+ */
+const leaderboard = !!process.env.E2E_LEADERBOARD;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -12,7 +18,23 @@ export default defineConfig({
   forbidOnly: isCI,
   reporter: isCI ? 'github' : 'list',
   use: { baseURL: `http://localhost:${PORT}`, trace: 'retain-on-failure' },
+  // Leaderboard specs only run in the leaderboard project; it runs nothing else.
+  testIgnore: leaderboard ? undefined : 'leaderboard.spec.ts',
   projects: [
+    ...(leaderboard
+      ? [
+          {
+            name: 'leaderboard-android',
+            testMatch: 'leaderboard.spec.ts',
+            use: { ...devices['Pixel 7'] },
+          },
+          {
+            name: 'leaderboard-iphone',
+            testMatch: 'leaderboard.spec.ts',
+            use: { ...devices['iPhone 14'] },
+          },
+        ]
+      : []),
     // Budget Android is the primary target.
     { name: 'android-chrome', use: { ...devices['Pixel 7'] } },
     { name: 'iphone-webkit', use: { ...devices['iPhone 14'] } },
@@ -45,5 +67,14 @@ export default defineConfig({
       port: DEV_PORT,
       reuseExistingServer: false,
     },
+    ...(leaderboard
+      ? [
+          {
+            command: `DEV_API_NOW=${LEADERBOARD_NOW} npx tsx --tsconfig tsconfig.node.json scripts/dev-api.ts`,
+            port: 8788,
+            reuseExistingServer: false,
+          },
+        ]
+      : []),
   ],
 });
