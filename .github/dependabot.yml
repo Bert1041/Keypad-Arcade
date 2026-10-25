@@ -1,0 +1,28 @@
+# Weekly dependency updates, grouped so they arrive as a few pull requests.
+# Every update runs the full CI suite before it can be merged.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Node's type definitions must match the Node version we run (24, see .nvmrc).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # Phaser 4 is a rewrite with API changes; moving to it is a deliberate decision (PLAN.md).
+      - dependency-name: 'phaser'
+        update-types: ['version-update:semver-major']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
