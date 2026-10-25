@@ -6,7 +6,14 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist/**', 'dev-dist/**', 'test-results/**', 'playwright-report/**']),
+  globalIgnores([
+    '.vercel/**',
+    'api/**',
+    'dist/**',
+    'dev-dist/**',
+    'test-results/**',
+    'playwright-report/**',
+  ]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],

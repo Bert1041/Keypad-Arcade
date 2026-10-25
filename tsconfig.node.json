@@ -25,6 +25,7 @@
   "include": [
     "e2e",
     "scripts",
+    "server",
     "*.config.ts",
     "src/**/*.test.ts",
     "src/types/e2e-globals.d.ts",

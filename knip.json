@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["scripts/rebound-levels/solve.ts"],
-  "ignoreExportsUsedInFile": true
+  "entry": ["scripts/rebound-levels/solve.ts", "server/api/*.ts"],
+  "ignoreExportsUsedInFile": true,
+  "ignore": ["api/**"]
 }

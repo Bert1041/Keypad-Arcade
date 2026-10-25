@@ -154,6 +154,30 @@ describe('the shell stays light', () => {
   });
 });
 
+describe('the leaderboard server stays small and headless', () => {
+  it('reaches a game only through its verify.ts, and nothing from the browser app', () => {
+    // A function bundles everything it imports: Phaser, React or IndexedDB code would bloat it or
+    // crash on the server. Game rules come in through each game's verify.ts.
+    const FROM_SRC = [
+      /^\.\.\/src\/games\/[a-z-]+\/verify$/,
+      /^\.\.\/src\/games\/types$/,
+      /^\.\.\/src\/core\/(challenge\/daily|random\/seededRandom)$/,
+    ];
+    const allowed = (spec: string) =>
+      spec.startsWith('../src/')
+        ? FROM_SRC.some((pattern) => pattern.test(spec))
+        : /^(\.\.?\/|node:|@upstash\/redis$)/.test(spec);
+    const offenders = sourceFiles(join(ROOT, 'server'))
+      .filter((file) => !file.endsWith('testRedis.ts'))
+      .flatMap((file) =>
+        importsOf(file)
+          .filter((spec) => !allowed(spec))
+          .map((spec) => `${rel(file)} imports '${spec}'`),
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('the shell uses design tokens', () => {
   const TOKENS = join(SRC, 'styles', 'tokens.css');
   const shellFiles = (dir: string): string[] =>

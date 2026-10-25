@@ -19,10 +19,15 @@
     "test:all": "npm run check && npm run e2e",
     "levels:solve": "sh scripts/rebound-levels/solve.sh",
     "levels:trace": "tsx scripts/rebound-levels/trace.ts",
-    "deploy": "npx --yes vercel@65.2.0 deploy --prod"
+    "deploy": "npx --yes vercel@65.2.0 deploy --prod",
+    "build:api": "vite build --config vite.api.config.ts",
+    "api:check": "npm run build:api && git diff --exit-code --stat -- api && test -z \"$(git ls-files --others --exclude-standard api)\"",
+    "test:server": "vitest run --config vitest.server.config.ts",
+    "redis:test": "sh scripts/test-redis.sh"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "5.3.0",
+    "@upstash/redis": "1.39.0",
     "dexie": "4.4.7",
     "phaser": "3.90.0",
     "react": "19.3.1",
