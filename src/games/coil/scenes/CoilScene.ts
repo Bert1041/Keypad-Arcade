@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameServices, RandomFn } from '@/games/types';
 import { showGameOver } from '@/games/shared/gameOver';
 import { isForShellControl } from '@/games/shared/input';
+import { RetryGate } from '@/games/shared/retry';
 import { BODY_FONT, INK, PIXEL_FONT } from '@/games/shared/style';
 import {
   createCoil,
@@ -53,7 +54,7 @@ export class CoilScene extends Phaser.Scene {
   private elapsed = 0;
   private started = false;
   private over = false;
-  private overAt = 0;
+  private retry = new RetryGate(RETRY_DELAY_MS);
   private swipeStart: { x: number; y: number } | null = null;
   private gfx!: Phaser.GameObjects.Graphics;
   private scoreText!: Phaser.GameObjects.Text;
@@ -91,13 +92,18 @@ export class CoilScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.retry = new RetryGate(RETRY_DELAY_MS);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (this.over) return this.retry.press(this.time.now);
       this.swipeStart = { x: p.x, y: p.y };
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => {
       const start = this.swipeStart;
       this.swipeStart = null;
-      if (this.over) return this.tryRestart();
+      if (this.over) {
+        if (this.retry.release()) this.scene.restart();
+        return;
+      }
       if (!start) return;
       // Pointer coordinates are in world units; convert back to screen pixels so the swipe
       // threshold feels the same on every screen size.
@@ -109,7 +115,11 @@ export class CoilScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (isForShellControl(event)) return;
       if (event.code === 'Escape') return this.services.onExitRequested();
-      if (this.over && (event.code === 'Space' || event.code === 'Enter')) return this.tryRestart();
+      if (this.over) {
+        const restartKey = event.code === 'Space' || event.code === 'Enter';
+        if (restartKey && this.retry.key(this.time.now, event.repeat)) this.scene.restart();
+        return;
+      }
       const dir = KEY_TO_DIR[event.code];
       if (dir) {
         event.preventDefault(); // arrows must not scroll the page
@@ -164,10 +174,6 @@ export class CoilScene extends Phaser.Scene {
     }
     this.scoreText.setText(String(this.state.score));
     this.draw();
-  }
-
-  private tryRestart() {
-    if (this.time.now - this.overAt >= RETRY_DELAY_MS) this.scene.restart();
   }
 
   private cellRect(cell: Cell, inset: number) {
@@ -240,7 +246,7 @@ export class CoilScene extends Phaser.Scene {
 
   private endRun() {
     this.over = true;
-    this.overAt = this.time.now;
+    this.retry.end(this.time.now);
     this.services.sfx.blip(110, 300);
     this.services.onRunComplete({ score: this.state.score });
 

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameServices, RandomFn } from '@/games/types';
 import { showGameOver } from '@/games/shared/gameOver';
 import { isForShellControl } from '@/games/shared/input';
+import { RetryGate } from '@/games/shared/retry';
 import { makePixelTexture } from '@/games/shared/pixelArt';
 import { BODY_FONT, INK, PIXEL_FONT } from '@/games/shared/style';
 import {
@@ -43,7 +44,7 @@ export class RaidScene extends Phaser.Scene {
   private elapsed = 0;
   private started = false;
   private over = false;
-  private overAt = 0;
+  private retry = new RetryGate(RETRY_DELAY_MS);
   private ship!: Phaser.GameObjects.Image;
   private enemySprites = new Map<number, Phaser.GameObjects.Image>();
   private powerSprites = new Map<number, Phaser.GameObjects.Image>();
@@ -106,8 +107,9 @@ export class RaidScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.retry = new RetryGate(RETRY_DELAY_MS);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.over) return;
+      if (this.over) return this.retry.press(this.time.now);
       this.start();
       this.drag = { pointerX: p.x, shipX: this.state.ship.x };
     });
@@ -120,7 +122,7 @@ export class RaidScene extends Phaser.Scene {
     this.input.on('pointerup', () => {
       this.drag = null;
       this.input_ = this.keyInput();
-      if (this.over) this.tryRestart();
+      if (this.over && this.retry.release()) this.scene.restart();
     });
 
     const keyboard = this.input.keyboard;
@@ -128,7 +130,8 @@ export class RaidScene extends Phaser.Scene {
       if (isForShellControl(event)) return;
       if (event.code === 'Escape') return this.services.onExitRequested();
       if (this.over) {
-        if (event.code === 'Space' || event.code === 'Enter') this.tryRestart();
+        const restartKey = event.code === 'Space' || event.code === 'Enter';
+        if (restartKey && this.retry.key(this.time.now, event.repeat)) this.scene.restart();
         return;
       }
       const side = this.sideFor(event.code);
@@ -174,10 +177,6 @@ export class RaidScene extends Phaser.Scene {
     if (this.started) return;
     this.started = true;
     this.hint.setVisible(false);
-  }
-
-  private tryRestart() {
-    if (this.time.now - this.overAt >= RETRY_DELAY_MS) this.scene.restart();
   }
 
   private handle(event: RaidEvent) {
@@ -342,7 +341,7 @@ export class RaidScene extends Phaser.Scene {
 
   private endRun() {
     this.over = true;
-    this.overAt = this.time.now;
+    this.retry.end(this.time.now);
     this.services.sfx.blip(110, 300);
     this.services.onRunComplete({ score: this.state.score });
     const isBest = this.state.score > this.best;

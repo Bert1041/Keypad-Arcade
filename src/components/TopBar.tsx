@@ -21,7 +21,7 @@ export function TopBar({ onBack, title, right }: Props) {
           >
             <path d="M5 1h1v1H5zM4 2h1v1H4zM3 3h1v2H3zM4 5h1v1H4zM5 6h1v1H5z" fill="currentColor" />
           </svg>
-          Back
+          <span className={styles.backText}>Back</span>
         </button>
       ) : (
         <span />

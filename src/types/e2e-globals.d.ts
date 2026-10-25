@@ -11,7 +11,14 @@ declare global {
      */
     __REBOUND_SCRIPT__?: { ms: number; move?: number; jump?: boolean }[][];
     /** Rebound: a read-only look at the run, for tests of the controls and menu. */
-    __REBOUND_DEBUG__?: () => { started: boolean; level: number; score: number; x: number };
+    __REBOUND_DEBUG__?: () => {
+      started: boolean;
+      level: number;
+      score: number;
+      x: number;
+      y: number;
+      over: boolean;
+    };
   }
 }
 

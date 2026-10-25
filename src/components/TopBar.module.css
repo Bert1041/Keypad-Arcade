@@ -1,6 +1,7 @@
 .bar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* The sides keep their size; the title takes what is left and truncates, never the score. */
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
   align-items: center;
   gap: 8px;
   padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
@@ -11,6 +12,10 @@
   margin: 0;
   font-size: 12px;
   text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .back {
   justify-self: start;
@@ -25,4 +30,15 @@
   justify-self: end;
   font-size: 14px;
   color: var(--text-muted);
+  white-space: nowrap;
+}
+/* Narrow phones: the Back arrow alone (its accessible name stays "Back to library"). */
+@media (max-width: 360px) {
+  .bar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .backText {
+    display: none;
+  }
 }

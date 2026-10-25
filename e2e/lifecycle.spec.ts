@@ -1,3 +1,4 @@
+import { type Page } from '@playwright/test';
 import { expect, test, press } from './fixtures';
 import { GAME_IDS, expectNoGames, expectOneRunningGame } from './helpers';
 
@@ -58,4 +59,61 @@ test('the canvas fits inside the stage without overflowing the screen', async ({
 test('an unknown game id goes back to the library', async ({ page }) => {
   await page.goto('/play/does-not-exist');
   await expect(page).toHaveURL('/');
+});
+
+/** Canvas and stage rectangles, in CSS pixels. */
+const layout = (page: Page) =>
+  page.evaluate(() => {
+    const r = (el: Element | null) => {
+      const b = el?.getBoundingClientRect();
+      return b ? { x: b.x, y: b.y, w: b.width, h: b.height } : null;
+    };
+    return {
+      canvas: r(document.querySelector('canvas')),
+      stage: r(document.querySelector('[data-testid="game-container"]')),
+    };
+  });
+
+for (const id of GAME_IDS) {
+  test(`${id}: rotating the phone resizes the game to fit, both ways`, async ({ page }) => {
+    await page.goto(`/play/${id}`);
+    await expectOneRunningGame(page);
+    const portrait = page.viewportSize();
+    if (!portrait) throw new Error('no viewport');
+    const fits = async () => {
+      const { canvas, stage } = await layout(page);
+      if (!canvas || !stage) return false;
+      const inside =
+        canvas.x >= stage.x - 1 &&
+        canvas.y >= stage.y - 1 &&
+        canvas.x + canvas.w <= stage.x + stage.w + 1 &&
+        canvas.y + canvas.h <= stage.y + stage.h + 1;
+      // …and as big as it can be: touching the stage on at least one axis.
+      const filled = canvas.w >= stage.w - 2 || canvas.h >= stage.h - 2;
+      return inside && filled;
+    };
+    await page.setViewportSize({ width: portrait.height, height: portrait.width });
+    await expect.poll(fits, { timeout: 3_000 }).toBe(true);
+    await page.setViewportSize(portrait);
+    await expect.poll(fits, { timeout: 3_000 }).toBe(true);
+  });
+}
+
+test('on a slow connection, the game says it is loading instead of showing nothing', async ({
+  page,
+}) => {
+  // Hold back every game-code download, as a weak 3G signal would.
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  // Built: /assets/createGame-<hash>.js; dev server: /src/games/<id>/createGame.ts.
+  await page.route(/createGame(-[\w-]+)?\.(js|ts)(\?.*)?$/, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto('/');
+  await press(page.getByTestId('game-card-star-raid'));
+  await expect(page.getByRole('status').filter({ hasText: 'Loading Star Raid…' })).toBeVisible();
+  release();
+  await expectOneRunningGame(page);
+  await expect(page.getByText('Loading Star Raid…')).toHaveCount(0);
 });

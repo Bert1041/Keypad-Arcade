@@ -31,7 +31,8 @@
   padding: 0;
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  /* Two columns down to a 320 px-wide phone (one column made each thumbnail screen-wide). */
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
 }
 .card {
   display: flex;

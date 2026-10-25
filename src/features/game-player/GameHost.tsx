@@ -24,6 +24,8 @@ export function GameHost({ game, services, paused, overlay }: Props) {
   const instanceRef = useRef<GameInstance | null>(null);
   const pausedRef = useRef(paused);
   const [failed, setFailed] = useState(false);
+  // On a slow connection the game's code takes seconds to arrive: say so, or it looks broken.
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -56,6 +58,7 @@ export function GameHost({ game, services, paused, overlay }: Props) {
     };
 
     setFailed(false);
+    setLoading(true);
     game
       .load()
       .then((create) => {
@@ -64,11 +67,14 @@ export function GameHost({ game, services, paused, overlay }: Props) {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
         instance = create(parent, stable);
         instanceRef.current = instance;
+        setLoading(false);
         // Paused before it finished loading (e.g. the app went to the background): stay paused.
         if (pausedRef.current) instance.pause();
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (cancelled) return;
+        setLoading(false);
+        setFailed(true);
       });
 
     return () => {
@@ -81,6 +87,11 @@ export function GameHost({ game, services, paused, overlay }: Props) {
   return (
     <div className={styles.stage}>
       <div ref={containerRef} className={styles.canvasHost} data-testid="game-container" />
+      {loading && !failed && (
+        <p className={styles.loading} role="status">
+          Loading {game.title}…
+        </p>
+      )}
       {overlay}
       {failed && (
         <p className={styles.error} role="alert">

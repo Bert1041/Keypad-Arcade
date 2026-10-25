@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameServices } from '@/games/types';
 import { showGameOver } from '@/games/shared/gameOver';
 import { isForShellControl } from '@/games/shared/input';
+import { RetryGate } from '@/games/shared/retry';
 import { BODY_FONT, INK, PIXEL_FONT } from '@/games/shared/style';
 import { LEVELS } from '../levels';
 import { TILE, type Level } from '../logic/level';
@@ -61,7 +62,7 @@ export class ReboundScene extends Phaser.Scene {
   private elapsed = 0;
   private started = false;
   private over = false;
-  private overAt = 0;
+  private retry = new RetryGate(RETRY_DELAY_MS);
   private clearUntil = 0;
   private world!: Phaser.GameObjects.Layer;
   private ui!: Phaser.GameObjects.Layer;
@@ -156,6 +157,8 @@ export class ReboundScene extends Phaser.Scene {
         level: this.state.levelIndex + 1,
         score: this.state.score,
         x: this.state.ball.x,
+        y: this.state.ball.y,
+        over: this.over,
       });
     }
     this.scripts = E2E ? (window.__REBOUND_SCRIPT__ ?? null) : null;
@@ -297,7 +300,7 @@ export class ReboundScene extends Phaser.Scene {
 
   private endRun(headline?: string) {
     this.over = true;
-    this.overAt = this.time.now;
+    this.retry.end(this.time.now);
     this.render();
     this.services.onRunComplete({ score: this.state.score });
     const isBest = this.state.score > this.best;
@@ -308,10 +311,6 @@ export class ReboundScene extends Phaser.Scene {
     });
     if (headline) panel.setText(panel.text.replace('GAME OVER', headline));
     this.world.add(panel);
-  }
-
-  private tryRestart() {
-    if (this.over && this.time.now - this.overAt >= RETRY_DELAY_MS) this.scene.restart();
   }
 
   private showBanner(text: string, ms: number) {
@@ -339,8 +338,9 @@ export class ReboundScene extends Phaser.Scene {
   private bindInput() {
     // Hold a direction and press jump at the same time: needs more than one touch point.
     this.input.addPointer(2);
+    this.retry = new RetryGate(RETRY_DELAY_MS);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.over) return;
+      if (this.over) return this.retry.press(this.time.now);
       const button = this.buttonAt(p);
       if (button) {
         this.pointerButtons.set(p.id, button);
@@ -349,7 +349,7 @@ export class ReboundScene extends Phaser.Scene {
     });
     const release = (p: Phaser.Input.Pointer) => {
       if (this.pointerButtons.delete(p.id)) this.syncHeld();
-      if (this.over) this.tryRestart();
+      if (this.over && this.retry.release()) this.scene.restart();
     };
     this.input.on('pointerup', release);
     this.input.on('pointerupoutside', release);
@@ -364,7 +364,8 @@ export class ReboundScene extends Phaser.Scene {
       if (isForShellControl(event)) return;
       if (event.code === 'Escape') return this.services.onExitRequested();
       if (this.over) {
-        if (event.code === 'Space' || event.code === 'Enter') this.tryRestart();
+        const restartKey = event.code === 'Space' || event.code === 'Enter';
+        if (restartKey && this.retry.key(this.time.now, event.repeat)) this.scene.restart();
         return;
       }
       if (!this.started && (event.code === 'Space' || event.code === 'Enter')) {

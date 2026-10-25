@@ -30,7 +30,19 @@ function setInput(game: Phaser.Game, enabled: boolean) {
  */
 export function trackPhaserGame(game: Phaser.Game): GameInstance {
   live.add(game);
-  game.events.once(Phaser.Core.Events.DESTROY, () => live.delete(game));
+  // Phaser misses its container changing size on rotation: it kept the old size, overflowing
+  // the bars in landscape and shrinking back in portrait. Watch the container and refresh.
+  let resize: ResizeObserver | null = null;
+  game.events.once(Phaser.Core.Events.READY, () => {
+    const parent = game.scale.parent as HTMLElement | null;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
+    resize = new ResizeObserver(() => game.scale.refresh());
+    resize.observe(parent);
+  });
+  game.events.once(Phaser.Core.Events.DESTROY, () => {
+    resize?.disconnect();
+    live.delete(game);
+  });
   return {
     destroy: () => game.destroy(true),
     pause: () => {

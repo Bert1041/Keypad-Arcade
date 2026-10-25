@@ -101,3 +101,84 @@ test('keyboard: Space starts, the arrow keys roll', async ({ page, isMobile }) =
   await page.keyboard.up('ArrowRight');
   expect((await debug(page))?.x).toBeGreaterThan(startX + 48);
 });
+
+test('two fingers: hold ▶ and tap JUMP — the ball jumps while it keeps rolling', async ({
+  page,
+  browserName,
+  isMobile,
+}) => {
+  test.skip(browserName !== 'chromium', 'multi-touch is sent through Chrome’s devtools protocol');
+  test.skip(!isMobile, 'the pad is for touchscreens; desktop plays with the keyboard');
+  await page.goto('/play/rebound');
+  await expectOneRunningGame(page);
+  await tapWorld(page, MENU_FIRST.x, MENU_FIRST.y);
+  await expect.poll(() => debug(page)).toMatchObject({ started: true });
+  await page.waitForTimeout(500); // settle on the floor
+  const start = await debug(page);
+  const right = await at(page, PAD_RIGHT.x, PAD_RIGHT.y);
+  const jump = await at(page, 295, 540);
+  const cdp = await page.context().newCDPSession(page);
+  const finger = (id: number, p: { x: number; y: number }) => ({ id, x: p.x, y: p.y });
+  // Finger 1 holds ▶ …
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [finger(1, right)],
+  });
+  await page.waitForTimeout(250);
+  // … finger 2 presses JUMP without finger 1 letting go.
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [finger(1, right), finger(2, jump)],
+  });
+  let highest = start?.y ?? 0;
+  for (let i = 0; i < 12; i++) {
+    await page.waitForTimeout(40);
+    highest = Math.min(highest, (await debug(page))?.y ?? highest);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [finger(1, right)] });
+  await page.waitForTimeout(150);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const end = await debug(page);
+  expect(highest).toBeLessThan((start?.y ?? 0) - 24); // rose over a tile: it jumped
+  expect(end?.x ?? 0).toBeGreaterThan((start?.x ?? 0) + 24); // and kept rolling right
+});
+
+test('dying while holding a button does not restart the moment you let go', async ({ page }) => {
+  // Level 2 starts with spikes ahead: hold ▶ and the ball rolls into them, three lives running.
+  await page.goto('/');
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open('keypad-arcade');
+        open.onsuccess = () => {
+          const tx = open.result.transaction('gameStats', 'readwrite');
+          tx.objectStore('gameStats').put({
+            gameId: 'rebound',
+            bestScore: 0,
+            playCount: 0,
+            lastPlayedAt: 0,
+            reachedLevel: 2,
+          });
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        };
+        open.onerror = () => reject(open.error);
+      }),
+  );
+  await page.goto('/play/rebound');
+  await expectOneRunningGame(page);
+  await tapWorld(page, MENU_FIRST.x, MENU_FIRST.y); // "Continue: level 2"
+  await expect.poll(() => debug(page)).toMatchObject({ started: true, level: 2 });
+  const right = await at(page, PAD_RIGHT.x, PAD_RIGHT.y);
+  await page.mouse.move(right.x, right.y);
+  await page.mouse.down();
+  await expect.poll(() => debug(page), { timeout: 20_000 }).toMatchObject({ over: true });
+  await page.waitForTimeout(1_000); // still holding, well past the retry delay
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  // The game-over screen (and the score to share) must still be there.
+  expect(await debug(page)).toMatchObject({ over: true, started: true });
+  // A fresh tap does restart.
+  await tapWorld(page, 180, 240);
+  await expect.poll(() => debug(page)).toMatchObject({ over: false, started: false });
+});
