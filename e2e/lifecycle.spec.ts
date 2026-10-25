@@ -1,16 +1,28 @@
 import { expect, test, press } from './fixtures';
-import { expectNoGames, expectOneRunningGame } from './helpers';
+import { GAME_IDS, expectNoGames, expectOneRunningGame } from './helpers';
 
-test('entering and leaving repeatedly never leaves an extra game running', async ({ page }) => {
+test('the library lists exactly the games in this build', async ({ page }) => {
   await page.goto('/');
-  for (let i = 0; i < 4; i++) {
-    await press(page.getByTestId('game-card-prototype'));
-    await expectOneRunningGame(page);
-    await press(page.getByRole('button', { name: 'Back to library' }));
-    await expect(page).toHaveURL('/');
-    await expectNoGames(page);
-  }
+  const cards = page.locator('[data-testid^="game-card-"]');
+  await expect(cards).toHaveCount(GAME_IDS.length);
+  const ids = await cards.evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+  expect(ids).toEqual(GAME_IDS.map((id) => `game-card-${id}`));
 });
+
+for (const id of GAME_IDS) {
+  test(`${id}: entering and leaving repeatedly never leaves an extra game running`, async ({
+    page,
+  }) => {
+    await page.goto('/');
+    for (let i = 0; i < 4; i++) {
+      await press(page.getByTestId(`game-card-${id}`));
+      await expectOneRunningGame(page);
+      await press(page.getByRole('button', { name: 'Back to library' }));
+      await expect(page).toHaveURL('/');
+      await expectNoGames(page);
+    }
+  });
+}
 
 test('the browser/Android back gesture also tears the game down', async ({ page }) => {
   await page.goto('/');

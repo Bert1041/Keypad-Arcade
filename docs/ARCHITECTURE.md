@@ -91,6 +91,14 @@ Enforced by `src/architecture.test.ts` (each rule was mutation-checked):
 **Delete a game:** remove its folder and its line in `registry.ts`. Its saved scores stay in the
 player's database, harmlessly.
 
+**`prototype` (Stack Test) is a test fixture**, not a game: the registry includes it only in
+development and `VITE_E2E=1` builds, and a production build contains no trace of it. The shared
+host tests (lifecycle, persistence, sharing) drive it because its first tap always scores.
+
+**`coil`** is the reference implementation of a real game: rules in `logic/`, a thin scene, and an
+e2e test that predicts the score from the seed with the game's own rules module and checks the
+real browser matches.
+
 ## 4. The game ↔ shell contract
 
 `src/games/types.ts`. A game receives `GameServices` and nothing else:
@@ -182,7 +190,7 @@ Habits:
 3. Put rules in `logic/` with unit tests; scenes stay thin.
 4. Randomness only from `beginRun()`; report every finished run; Esc exits; respect
    `isForShellControl`; call `trackPhaserGame()` on the game you create.
-5. Add the game to the e2e lifecycle/persistence/share tests (they currently drive the
-   prototype).
+5. Add its id to `GAME_IDS` in `e2e/helpers.ts` (lifecycle tests run per game), and give it a
+   spec like `e2e/coil.spec.ts`: a seed whose run scores, predicted by the game's own logic.
 6. Mutation-check each new test. Run `npm run check` and `npm run e2e`.
 7. Test on a real phone (docs/MANUAL_QA.md). Update this file and the decision log.

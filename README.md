@@ -3,9 +3,9 @@
 Original pocket games inspired by the phones we grew up with — an installable, offline web app
 (PWA). Finish a run, send a friend the exact same run on WhatsApp, and dare them to beat you.
 
-**Status:** Game host, saving, offline and the challenge/share loop are built and tested. The only
-game is a disposable prototype ("Stack Test"); the launch games are being chosen (PLAN.md,
-Phase 0). Not deployed.
+**Status:** Game host, saving, offline and the challenge/share loop are built and tested. Launch
+lineup: **Coil** (snake, built), **Star Raid** (shooter, next), **Rebound** (ball platformer).
+Not deployed.
 
 ## Documentation
 
@@ -18,7 +18,7 @@ Phase 0). Not deployed.
 | [README_RetroBox_updated.md](README_RetroBox_updated.md) | Original product and engineering brief |
 
 **Learning path:** this file → ARCHITECTURE §1–4 → run the app, play a run, share it, open the
-link → read `src/games/prototype/` top to bottom → ARCHITECTURE §5–10.
+link → read `src/games/coil/` top to bottom → ARCHITECTURE §5–10.
 
 ## Requirements
 

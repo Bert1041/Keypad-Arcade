@@ -1,0 +1,22 @@
+import Phaser from 'phaser';
+import type { CreateGame } from '@/games/types';
+import { trackPhaserGame } from '@/games/shared/phaserLifecycle';
+import { CoilScene, WORLD_HEIGHT, WORLD_WIDTH } from './scenes/CoilScene';
+
+export const createGame: CreateGame = (parent, services) => {
+  const game = trackPhaserGame(
+    new Phaser.Game({
+      type: Phaser.AUTO,
+      parent,
+      width: WORLD_WIDTH,
+      height: WORLD_HEIGHT,
+      backgroundColor: '#0d0e14',
+      pixelArt: true,
+      // Sound is synthesized through services.sfx, so Phaser's audio system is not needed.
+      audio: { noAudio: true },
+      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      scene: [new CoilScene(services)],
+    }),
+  );
+  return { destroy: () => game.destroy(true) };
+};
