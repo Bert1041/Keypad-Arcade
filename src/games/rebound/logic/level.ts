@@ -59,6 +59,12 @@ export interface Level {
   rings: number;
   platforms: PlatformDef[];
   parMs: number;
+  /**
+   * Which tiles are water: `~`, plus any non-solid tile with water directly above it or on both
+   * sides — a ring or gem placed in a pool replaces the `~` in the map but is still under water
+   * (otherwise each one was a tiny air pocket).
+   */
+  water: boolean[][];
 }
 
 /** Validates and parses a level; throws with the level name and position on any mistake. */
@@ -103,5 +109,22 @@ export function parseLevel(def: LevelDef): Level {
     rings,
     platforms: def.platforms ?? [],
     parMs: def.parMs ?? DEFAULT_PAR_MS,
+    water: waterMask(grid),
   };
+}
+
+const SOLID_TILES = new Set<TileChar>(['#', 'H']);
+
+function waterMask(grid: TileChar[][]): boolean[][] {
+  const water = grid.map((row) => row.map((t) => t === '~'));
+  grid.forEach((row, y) =>
+    row.forEach((t, x) => {
+      if (t === '~' || SOLID_TILES.has(t)) return;
+      const above = water[y - 1]?.[x] ?? false;
+      const sides = (row[x - 1] === '~' || water[y]?.[x - 1] === true) && row[x + 1] === '~';
+      const line = water[y];
+      if (line && (above || sides)) line[x] = true;
+    }),
+  );
+  return water;
 }

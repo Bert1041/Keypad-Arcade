@@ -124,6 +124,8 @@ export class ReboundScene extends Phaser.Scene {
       .text(10, 8, '', {
         fontFamily: PIXEL_FONT,
         fontSize: '10px',
+        backgroundColor: `${INK.bgCss}b3`, // readable over walls in tall levels
+        padding: { x: 6, y: 5 },
         color: INK.text,
         lineSpacing: 6,
       })
@@ -477,6 +479,13 @@ export class ReboundScene extends Phaser.Scene {
   private drawTiles(level: Level) {
     const g = this.levelGfx;
     g.clear();
+    // Water first, from the mask, so pickups in a pool sit in water rather than in a dark hole.
+    g.fillStyle(COLOR.water, 0.45);
+    level.water.forEach((row, ty) =>
+      row.forEach((wet, tx) => {
+        if (wet) g.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+      }),
+    );
     level.grid.forEach((row, ty) =>
       row.forEach((tile, tx) => {
         const x = tx * TILE;
@@ -518,9 +527,7 @@ export class ReboundScene extends Phaser.Scene {
             for (let i = 0; i < 4; i++) g.fillRect(x + 2 + i * 6, y, 2, TILE);
             break;
           case '~':
-            g.fillStyle(COLOR.water, 0.45);
-            g.fillRect(x, y, TILE, TILE);
-            break;
+            break; // drawn from the water mask, below
           case 's':
           case 'n':
           case 'g':

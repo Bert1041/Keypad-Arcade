@@ -66,10 +66,16 @@ function truncate(solution: readonly ScriptStep[], ms: number): ScriptStep[] {
 }
 
 /**
+ * How far a player may re-time their *next* input after a mistimed one: someone who pressed a
+ * little late reacts to where the ball actually is. The mistimed input itself gets no help — a
+ * jump pressed too late into spikes stays fatal — only what follows it may adapt.
+ */
+export const COMPENSATE_MS = 6 * STEP_MS;
+
+/**
  * The input changes in a solution that a player could not hit reliably: moved `nudgeMs` earlier
- * or later (only that boundary; everything after stays on schedule), the move it belongs to
- * dies. Later steps are not judged — a player, unlike a fixed script, adjusts to where the ball
- * actually landed. Returned as boundary indexes (i = between step i and i + 1).
+ * or later, the move dies within REACTION_MS — even when the next input change is re-timed by up
+ * to COMPENSATE_MS to make up for it. Returned as boundary indexes (i = between step i and i+1).
  */
 export function fragileBoundaries(
   level: Level,
@@ -77,32 +83,59 @@ export function fragileBoundaries(
   nudgeMs = NUDGE_MS,
 ): { boundary: number; late: boolean }[] {
   const fragile: { boundary: number; late: boolean }[] = [];
+  const compensations = [0];
+  for (let k = 1; k * STEP_MS <= COMPENSATE_MS + 1e-9; k++)
+    compensations.push(k * STEP_MS, -k * STEP_MS);
   for (let i = 0; i < solution.length - 1; i++) {
     for (const delta of [-nudgeMs, nudgeMs]) {
-      const result = playNudged(level, solution, i, delta);
-      if (result?.events.some((e) => e.type === 'died')) {
-        fragile.push({ boundary: i, late: delta > 0 });
-      }
+      const survives = compensations.some((c) => {
+        const result = playNudged(level, solution, i, delta, c);
+        return result !== null && !result.events.some((e) => e.type === 'died');
+      });
+      if (!survives) fragile.push({ boundary: i, late: delta > 0 });
     }
   }
   return fragile;
 }
 
 /**
- * Replays a solution with input change `i` moved by `delta` ms, up to REACTION_MS after it —
- * the one definition of "a nudge", for the fairness check and for anything explaining it.
- * Null when the nudge would make a step negative.
+ * The script with input change `i` moved by `delta` ms and the next one by `compensate` ms.
+ * Only those two boundaries move: every later input keeps its schedule, and the total length is
+ * unchanged. Null when a step would become negative.
+ */
+export function nudgeScript(
+  solution: readonly ScriptStep[],
+  i: number,
+  delta: number,
+  compensate = 0,
+): ScriptStep[] | null {
+  const nudged = solution.map((s, j) =>
+    j === i
+      ? { ...s, ms: s.ms + delta }
+      : j === i + 1
+        ? { ...s, ms: s.ms - delta + compensate }
+        : j === i + 2
+          ? { ...s, ms: s.ms - compensate }
+          : s,
+  );
+  return nudged.some((s) => s.ms < 0) ? null : nudged;
+}
+
+/**
+ * Replays a solution nudged by nudgeScript(), for REACTION_MS after the change — the one
+ * definition of "a nudge", for the fairness check and anything explaining it. If the script
+ * ends sooner, the ball keeps going with no input: stopping the replay early would count a ball
+ * still in the air as having survived.
  */
 export function playNudged(
   level: Level,
   solution: readonly ScriptStep[],
   i: number,
   delta: number,
+  compensate = 0,
 ): ReturnType<typeof playScript> | null {
-  const nudged = solution.map((s, j) =>
-    j === i ? { ...s, ms: s.ms + delta } : j === i + 1 ? { ...s, ms: s.ms - delta } : s,
-  );
-  if (nudged.some((s) => s.ms < 0)) return null;
+  const nudged = nudgeScript(solution, i, delta, compensate);
+  if (!nudged) return null;
   const changeAt = solution.slice(0, i + 1).reduce((t, s) => t + s.ms, 0) + delta;
-  return playScript(level, truncate(nudged, changeAt + REACTION_MS));
+  return playScript(level, truncate([...nudged, { ms: REACTION_MS }], changeAt + REACTION_MS));
 }

@@ -93,7 +93,7 @@ Phase 0 and Phase 1 run **in parallel** — the game host does not depend on whi
 | **0 — Validate** | WhatsApp/X polls ranking the catalogue shortlist; 10 short chats with people who played Nokia/Java games in Nigeria | 3 concepts chosen with evidence; one-page brief each | 1–2 wk |
 | **1 — Game host** *(built 2026-10-25; real-device check pending)* | Vite/React/TS shell, registry, Phaser lifecycle, local saves, settings, PWA, disposable prototype game, e2e lifecycle test | Enter → play → exit → re-enter ×N with exactly one live game and canvas; best score survives reload | 1 wk |
 | **2 — Share loop + new look** *(share loop built 2026-10-25)* | Share card, challenge links, seeded RNG; modern theme with pixel accents | Share → open link → same run works from WhatsApp on a real phone | 1–2 wk |
-| **3 — The three launch games** *(Coil and Star Raid built 2026-10-25)* | Coil → Star Raid → Rebound, each to its brief, each in its own folder | All three playable on a budget Android, independent saves, challenge links replay each | 4–6 wk |
+| **3 — The three launch games** *(all three built 2026-10-25; real-phone testing pending)* | Coil → Star Raid → Rebound, each to its brief, each in its own folder | All three playable on a budget Android, independent saves, challenge links replay each | 4–6 wk |
 | **3.5 — Soft launch** | Ship to ~100 people via WhatsApp groups | §1 numbers measured for 2 weeks | 2 wk |
 | **4 — Polish + public launch** | Fix what 3.5 showed; icons, offline/update testing on devices, perf pass, launch content | README §10 definition of done | 1–2 wk |
 

@@ -26,7 +26,8 @@ const PAD_RIGHT = { x: 135, y: 540 };
 test('the real game plays every level from its solution to an all-clear run, saving progress', async ({
   page,
 }) => {
-  test.setTimeout(90_000);
+  // All ten levels at real speed: about 2.5 minutes of play.
+  test.setTimeout(330_000);
   const scripts = LEVEL_FILES.map((f) => f.solution);
   await page.addInitScript((s) => {
     window.__REBOUND_SCRIPT__ = s;
@@ -40,7 +41,7 @@ test('the real game plays every level from its solution to an all-clear run, sav
 
   await page.goto('/play/rebound');
   await expectOneRunningGame(page);
-  await expect.poll(() => lastScore(page), { timeout: 80_000 }).toBe(String(expected));
+  await expect.poll(() => lastScore(page), { timeout: 300_000 }).toBe(String(expected));
   await expect
     .poll(() => readDb(page, 'gameStats', 'rebound'))
     .toMatchObject({ reachedLevel: LEVELS.length, playCount: 1, bestScore: expected });

@@ -1,7 +1,7 @@
 /**
  * Finds a solution for a Rebound level by beam search, and records it in solutions.json.
  *
- *   npm run levels:solve -- level04
+ *   npm run levels:solve -- level04   (also regenerates the level files)
  *
  * Every 100 ms it tries each input (left / none / right × jump / no jump), keeps the most
  * promising few thousand paths — more collected, closer to the next pickup, alive — and stops
@@ -24,6 +24,7 @@ import {
   type ReboundState,
 } from '../../src/games/rebound/logic/rebound';
 import {
+  COMPENSATE_MS,
   NUDGE_MS,
   REACTION_MS,
   fragileBoundaries,
@@ -64,23 +65,67 @@ interface Node {
   changes: number;
   /** Jump presses so far. */
   jumps: number;
-  /** The state two ticks before this node's decision ended: where an early input change starts. */
-  pre: ReboundState;
+  /** Direction reversals so far. */
+  reversals: number;
+  /** Last non-zero direction pressed. */
+  heading: number;
+  /**
+   * For each recent decision: the state at its end, and two ticks before its end (where an
+   * input change made two ticks early would start). Kept for the delayed fairness check.
+   */
+  history: { pre: ReboundState; end: ReboundState }[];
 }
 
-/** Ticks to keep playing a nudged input change, to see whether it survives. */
-const SAFETY_TICKS = 30; // 500 ms
-const NUDGE_TICKS = 2;
+const NUDGE_TICKS = Math.round(NUDGE_MS / STEP_MS);
+const COMPENSATE_TICKS = Math.round(COMPENSATE_MS / STEP_MS);
+const REACTION_TICKS = Math.round(REACTION_MS / STEP_MS);
+/** Decisions to wait after an input change before judging it: the whole reaction window is known. */
+const LOOK = Math.ceil((REACTION_TICKS + NUDGE_TICKS + COMPENSATE_TICKS) / DECISION_TICKS) + 1;
 
-/** Plays `ticks` steps of `first` for `firstTicks`, then `then`; true if the ball survives. */
-function survives(from: ReboundState, first: ReboundInput, firstTicks: number, then: ReboundInput) {
-  const s = clone(from);
-  for (let t = 0; t < SAFETY_TICKS; t++) {
-    const events = tick(s, t < firstTicks ? first : then);
-    if (events.some((e) => e.type === 'died')) return false;
-    if (s.levelCleared) return true;
+/**
+ * The fairness rule of the tests (fragileBoundaries), applied inside the search: the input change
+ * at decision k, made two ticks early or late — with the next input change re-timed by up to
+ * COMPENSATE_TICKS — must not die within REACTION_TICKS. Judged once the path is LOOK decisions
+ * past it, so every input that follows is known (an approximation here once let unfair routes
+ * through, and rejected fair ones).
+ */
+function fairAt(node: Node, k: number): boolean {
+  const base = node.history.length - (node.actions.length - k) - 1; // history index of decision k-1
+  const entry = node.history[base];
+  const before = node.actions[k - 1];
+  if (!entry || before === undefined) return true;
+  const inputs: number[] = [before, before];
+  for (let j = k; j < node.actions.length; j++) {
+    for (let t = 0; t < DECISION_TICKS; t++) inputs.push(node.actions[j] ?? before);
   }
-  return true;
+  const B = NUDGE_TICKS; // the change, as a tick index into `inputs`
+  let m = k + 1;
+  while (m < node.actions.length && node.actions[m] === node.actions[m - 1]) m++;
+  const M = m < node.actions.length ? B + (m - k) * DECISION_TICKS : -1;
+  const compensations = [0];
+  if (M >= 0) for (let c = 1; c <= COMPENSATE_TICKS; c++) compensations.push(c, -c);
+  const runs = (delta: number, c: number) => {
+    const list = [...inputs];
+    const at = node.actions[k] ?? before;
+    if (delta < 0) for (let t = B + delta; t < B; t++) list[t] = at;
+    if (delta > 0) for (let t = B; t < B + delta; t++) list[t] = before;
+    if (M >= 0) {
+      const was = node.actions[m - 1] ?? before;
+      const now = node.actions[m] ?? before;
+      if (c > 0) for (let t = M; t < M + c; t++) list[t] = was;
+      if (c < 0) for (let t = M + c; t < M; t++) list[t] = now;
+    }
+    const s = clone(entry.pre);
+    const end = Math.min(list.length, B + delta + REACTION_TICKS);
+    for (let t = 0; t < end; t++) {
+      if (tick(s, ACTIONS[list[t] ?? before] ?? ACTIONS[0]!).some((e) => e.type === 'died')) {
+        return false;
+      }
+      if (s.levelCleared) return true;
+    }
+    return true;
+  };
+  return [-NUDGE_TICKS, NUDGE_TICKS].every((delta) => compensations.some((c) => runs(delta, c)));
 }
 
 /**
@@ -89,7 +134,10 @@ function survives(from: ReboundState, first: ReboundInput, firstTicks: number, t
  */
 const CHANGE_COST = 3;
 const JUMP_COST = 12;
-const score = (n: Node) => heuristic(n.state) - n.changes * CHANGE_COST - n.jumps * JUMP_COST;
+/** Reversing direction (right ↔ left): the fiddly counter-steering that fails fairness checks. */
+const REVERSAL_COST = 30;
+const score = (n: Node) =>
+  heuristic(n.state) - n.changes * CHANGE_COST - n.jumps * JUMP_COST - n.reversals * REVERSAL_COST;
 
 const clone = (s: ReboundState): ReboundState => ({
   ...s,
@@ -116,9 +164,11 @@ function bucket(s: ReboundState): string {
 }
 
 const start = createRebound([level]);
-let beam: Node[] = [{ state: start, actions: [], changes: 0, jumps: 0, pre: start }];
+let beam: Node[] = [
+  { state: start, actions: [], changes: 0, jumps: 0, reversals: 0, heading: 0, history: [] },
+];
 // Boxed so TypeScript keeps the type across the loop's assignments.
-const result: { found: Node | null } = { found: null };
+const result: { found: Node | null; best: Node | null } = { found: null, best: null };
 for (let depth = 0; depth < MAX_DECISIONS && !result.found && beam.length > 0; depth++) {
   const next = new Map<string, Node>();
   for (const node of beam) {
@@ -136,32 +186,40 @@ for (let depth = 0; depth < MAX_DECISIONS && !result.found && beam.length > 0; d
       if (dead || state.lives < START_LIVES) continue;
       const previous = node.actions.at(-1);
       const changed = previous !== undefined && previous !== a;
-      if (changed) {
-        // Fair to a person: the same change two ticks early or late must not be fatal either.
-        const old = ACTIONS[previous] ?? ACTIONS[0]!;
-        const early = survives(node.pre, input, SAFETY_TICKS, input);
-        const late = survives(node.state, old, NUDGE_TICKS, input);
-        if (!early || !late) continue;
-      }
       const pressed = input.jump && !(previous !== undefined && ACTIONS[previous]?.jump);
       const child = {
         state,
         actions: [...node.actions, a],
         changes: node.changes + (changed ? 1 : 0),
         jumps: node.jumps + (pressed ? 1 : 0),
-        pre,
+        reversals:
+          node.reversals +
+          (input.move !== 0 && node.heading !== 0 && input.move !== node.heading ? 1 : 0),
+        heading: input.move !== 0 ? input.move : node.heading,
+        history: [...node.history.slice(-(LOOK + 2)), { pre, end: state }],
       };
+      // Fair to a person: judge the input change LOOK decisions back, now that all that followed
+      // it is known.
+      const k = child.actions.length - LOOK;
+      if (k >= 1 && child.actions[k] !== child.actions[k - 1] && !fairAt(child, k)) continue;
       if (state.levelCleared) {
-        if (state.collected.size === pickups.length) result.found = child;
-        continue; // cleared without everything: not a solution
+        // The last LOOK decisions have not been judged yet: judge them now, before accepting.
+        const recent = Array.from({ length: LOOK }, (_, n) => child.actions.length - LOOK + n);
+        const fair = recent.every(
+          (k) => k < 1 || child.actions[k] === child.actions[k - 1] || fairAt(child, k),
+        );
+        if (fair && state.collected.size === pickups.length) result.found = child;
+        continue; // cleared without everything, or unfairly: not a solution
       }
-      const k = bucket(state);
-      const seen = next.get(k);
-      if (!seen || score(child) > score(seen)) next.set(k, child);
+      const key = bucket(state);
+      const seen = next.get(key);
+      if (!seen || score(child) > score(seen)) next.set(key, child);
     }
     if (result.found) break;
   }
   beam = [...next.values()].sort((a, b) => score(b) - score(a)).slice(0, beamWidth);
+  if (beam[0] && (!result.best || heuristic(beam[0].state) > heuristic(result.best.state)))
+    result.best = beam[0];
   if (depth % 50 === 0 && beam[0]) {
     const s = beam[0].state;
     console.log(
@@ -170,29 +228,36 @@ for (let depth = 0; depth < MAX_DECISIONS && !result.found && beam.length > 0; d
   }
 }
 
+const toSteps = (actions: number[]): ScriptStep[] => {
+  const out: ScriptStep[] = [];
+  for (const a of actions) {
+    const input = ACTIONS[a] ?? ACTIONS[0]!;
+    const last = out.at(-1);
+    if (last && (last.move ?? 0) === input.move && (last.jump ?? false) === input.jump)
+      last.ms += 100;
+    else
+      out.push({
+        ms: 100,
+        ...(input.move ? { move: input.move } : {}),
+        ...(input.jump ? { jump: true } : {}),
+      });
+  }
+  return out;
+};
+
 const found = result.found;
 if (!found) {
+  if (process.argv.includes('--dump') && result.best) {
+    // The furthest the search got, for `npm run levels:trace`.
+    console.log(JSON.stringify(toSteps(result.best.actions)));
+  }
   console.error(
     `${key}: no solution found (beam ${beamWidth}). Check the level, or widen the beam.`,
   );
   process.exit(1);
 }
 
-// Merge repeated actions into steps of whole 100 ms decisions.
-const steps: ScriptStep[] = [];
-for (const a of found.actions) {
-  const input = ACTIONS[a] ?? ACTIONS[0]!;
-  const last = steps.at(-1);
-  if (last && (last.move ?? 0) === input.move && (last.jump ?? false) === input.jump) {
-    last.ms += 100;
-  } else {
-    steps.push({
-      ms: 100,
-      ...(input.move ? { move: input.move } : {}),
-      ...(input.jump ? { jump: true } : {}),
-    });
-  }
-}
+const steps = toSteps(found.actions);
 
 // Repair: the search happily finds knife-edge timing. Slide each fragile input change to where
 // it has room either side (smallest shift first), keeping the level finished with everything.

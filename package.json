@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "knip": "knip --no-progress",
     "test:all": "npm run check && npm run e2e",
-    "levels:solve": "tsx scripts/rebound-levels/solve.ts"
+    "levels:solve": "sh scripts/rebound-levels/solve.sh",
+    "levels:trace": "tsx scripts/rebound-levels/trace.ts"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "5.3.0",

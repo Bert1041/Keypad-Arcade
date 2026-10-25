@@ -211,6 +211,11 @@ Habits:
 | Three of five Rebound test failures were my own maps | Hand-typed rows: a start with no floor under it, a row one character short | Levels come from a coordinate-based builder; `parseLevel()` rejects malformed maps |
 | A gem could only be reached by dying | Placed where the only jump to it ended on spikes | Solutions must collect every pickup without dying |
 | The e2e-played level 3 died where the unit test cleared it | Tests and scene each counted scripted milliseconds their own way (one carried float remainders) | One `scriptInputs()` for both; solutions must survive ±2 ticks |
+| The solver accepted routes the tests rejected, and rejected fair ones | Its in-search fairness check approximated the tests' rule (held jump for 500 ms; ignored the last 1.6 s) | It now applies the exact rule, once everything after an input change is known, and to the final moves before accepting |
+| Level files held stale maps or solutions | The solver read levelNN.ts before it was regenerated; a solution was recorded but not emitted | `levels:solve` rebuilds before solving and writes the solution after |
+| Jumping off a moving platform stopped dead in the air | No momentum transfer | Platform speed carries into the jump (tested, mutation-checked) |
+| Every underwater ring was a tiny air pocket | A pickup replaces the `~` in the map | A water mask decides; each of its rules has a case only it covers |
+| Pads you could jump over, tunnels too low to hop in, ferries ending a tile short, 5-wide pits off walls | Level design | Found by the solver: a level it cannot solve fairly gets redesigned |
 
 ## 10. Adding a game: checklist
 

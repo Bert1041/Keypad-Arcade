@@ -245,6 +245,25 @@ describe('sizes and water', () => {
   });
 });
 
+describe('the water mask', () => {
+  it('a ring or gem placed in a pool is still under water; a pickup in the air is not', () => {
+    const lv = level([
+      '##########',
+      '#S.......#',
+      '#....o...#',
+      '#~~o~~~~E#',
+      '#*~~~~~~.#',
+      '#~~~o~~~~#',
+      '##########',
+    ]);
+    expect(lv.water[4]?.[1]).toBe(true); // gem against the pool wall: water above it, not beside
+    expect(lv.water[5]?.[4]).toBe(true); // ring: water above and both sides
+    expect(lv.water[3]?.[3]).toBe(true); // ring at the surface: air above, water both sides
+    expect(lv.water[2]?.[5]).toBe(false); // ring in the air
+    expect(lv.water[4]?.[8]).toBe(false); // beside water on one side only, air above
+  });
+});
+
 describe('grates and ceiling spikes', () => {
   it('a grate stops a normal ball but lets a small one through', () => {
     const normal = createRebound([level(flat('S..H.o.E'))]);
@@ -323,6 +342,30 @@ describe('moving platforms', () => {
     run(s, 1500);
     expect(s.ball.x).toBeGreaterThan(x0 + 3 * TILE);
     expect(s.lives).toBe(START_LIVES);
+  });
+
+  it('a ball jumping off a moving platform keeps its speed, and lands back on it', () => {
+    const rows = [
+      '##################',
+      '#................#',
+      '#S...............#',
+      '#................#',
+      '#................#',
+      '#................#',
+      '#.^^^^^^^^^^^^^o.#',
+      '#E################',
+      '##################',
+    ];
+    const ferry = { x: 1, y: 5, width: 3, dx: 10, dy: 0, periodMs: 8000 };
+    const s = createRebound([level(rows, { platforms: [ferry] })]);
+    run(s, 1500); // land and ride while the ferry speeds up
+    const before = s.ball.x;
+    const events = run(s, 700, { move: 0, jump: true }); // straight up, no steering
+    expect(events).toContainEqual({ type: 'jump' });
+    // Without carried momentum it would come down where it left, behind the moving ferry.
+    expect(s.ball.x - before).toBeGreaterThan(TILE);
+    run(s, 400);
+    expect(s.lives).toBe(START_LIVES); // landed back on the ferry, not the spikes
   });
 });
 

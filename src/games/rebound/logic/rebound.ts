@@ -76,6 +76,11 @@ export interface Ball {
   angle: number;
   /** Rising from a jump (not a bounce): releasing jump cuts it short. */
   jumping: boolean;
+  /**
+   * Speed kept from the platform the ball last rode (px/s): jumping or rolling off a moving
+   * platform keeps its momentum, as in any platformer. Zero once back on solid ground.
+   */
+  carryVx: number;
 }
 
 export interface ReboundInput {
@@ -141,6 +146,7 @@ function freshBall(at: { x: number; y: number }, size: Size): Ball {
     jumpBufferMs: 0,
     angle: 0,
     jumping: false,
+    carryVx: 0,
   };
 }
 
@@ -275,6 +281,9 @@ export function tick(state: ReboundState, input: ReboundInput): ReboundEvent[] {
     const b = platformAt(riding, state.levelMs);
     ball.x += b.x - a.x;
     ball.y += b.y - a.y;
+    ball.carryVx = (b.x - a.x) / dt;
+  } else if (ball.grounded) {
+    ball.carryVx = 0;
   }
 
   // Jump input: buffer the press, cut the jump short on release.
@@ -319,12 +328,15 @@ export function tick(state: ReboundState, input: ReboundInput): ReboundEvent[] {
 
   // Move and collide, one axis at a time.
   const r = RADIUS[ball.size];
-  ball.x += ball.vx * dt;
+  // In the air the ball keeps any speed it took from a platform (on one, the ride moved it).
+  const vx = ball.vx + (ball.grounded ? 0 : ball.carryVx);
+  ball.x += vx * dt;
   for (const s of solidsNear(state, ballBox(ball), state.levelMs)) {
     // An earlier push may already have cleared this one.
     if (!overlaps(ballBox(ball), s)) continue;
-    ball.x = ball.vx > 0 || (ball.vx === 0 && ball.x < s.x + s.w / 2) ? s.x - r : s.x + s.w + r;
+    ball.x = vx > 0 || (vx === 0 && ball.x < s.x + s.w / 2) ? s.x - r : s.x + s.w + r;
     ball.vx = 0;
+    ball.carryVx = 0;
   }
   const wasGrounded = ball.grounded;
   const fallSpeed = ball.vy;
@@ -351,6 +363,7 @@ export function tick(state: ReboundState, input: ReboundInput): ReboundEvent[] {
   for (const [tx, ty] of tilesTouching(box)) {
     const tile = tileAt(state.level, tx, ty);
     const k = key(tx, ty);
+    if (state.level.water[ty]?.[tx]) ball.inWater = true;
     switch (tile) {
       case '^': {
         // Only the spikes themselves, the lower half of the tile.
@@ -417,8 +430,7 @@ export function tick(state: ReboundState, input: ReboundInput): ReboundEvent[] {
         break;
       }
       case '~':
-        ball.inWater = true;
-        break;
+        break; // handled by the water mask above
       case 'E':
         if (state.ringsLeft === 0) {
           state.levelCleared = true;
