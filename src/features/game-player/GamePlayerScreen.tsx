@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { findGame } from '@/games/registry';
 import type { GameDefinition, GameServices, RunResult } from '@/games/types';
-import { getStats, recordRun } from '@/core/scores/scores';
+import { getStats, recordLevelReached, recordRun, type GameStats } from '@/core/scores/scores';
 import { createSfx } from '@/core/audio/sfx';
 import { parseChallenge, type Challenge } from '@/core/challenge/challenge';
 import { createRunSeeds } from '@/core/random/runSeeds';
@@ -28,9 +28,11 @@ export function GamePlayerScreen() {
 
 function GameSession({ game, challenge }: { game: GameDefinition; challenge: Challenge | null }) {
   const leave = useLeave();
-  // Read once before the game starts so it can judge "new best"; never changes afterwards,
-  // so the game is never recreated by a score update.
-  const [launchBest, setLaunchBest] = useState<number | undefined>(undefined);
+  // Read once before the game starts (to judge "new best" and where to continue from); never
+  // changes afterwards, so the game is never recreated by a score update.
+  const [launch, setLaunch] = useState<Pick<GameStats, 'bestScore' | 'reachedLevel'> | undefined>(
+    undefined,
+  );
   // What the top bar shows; updated after every run.
   const [bestScore, setBestScore] = useState<number | undefined>(undefined);
   const [lastRun, setLastRun] = useState<FinishedRun | null>(null);
@@ -38,14 +40,14 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
 
   useEffect(() => {
     let cancelled = false;
-    // Can't reject: a storage failure is turned into a best of 0 above the last step.
+    // Can't reject: a storage failure is turned into a fresh start above the last step.
     void getStats(game.id)
-      .then((s) => s.bestScore)
-      .catch(() => 0)
-      .then((best) => {
+      .then(({ bestScore, reachedLevel }) => ({ bestScore, reachedLevel }))
+      .catch(() => ({ bestScore: 0, reachedLevel: 1 }))
+      .then((stats) => {
         if (cancelled) return;
-        setLaunchBest(best);
-        setBestScore(best);
+        setLaunch(stats);
+        setBestScore(stats.bestScore);
       });
     return () => {
       cancelled = true;
@@ -65,18 +67,27 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
     [game, seeds],
   );
 
+  const reachLevel = useCallback(
+    (level: number) => {
+      // Progress is a convenience: if it cannot be saved, the player still plays on.
+      recordLevelReached(game.id, level).catch(() => undefined);
+    },
+    [game],
+  );
+
   const services = useMemo<GameServices | undefined>(
     () =>
-      launchBest === undefined
+      launch === undefined
         ? undefined
         : {
             sfx,
-            bestScore: launchBest,
+            bestScore: launch.bestScore,
+            progress: { reachedLevel: launch.reachedLevel, reachLevel },
             beginRun: seeds.begin,
             onRunComplete,
             onExitRequested: leave,
           },
-    [launchBest, seeds, onRunComplete, leave],
+    [launch, seeds, onRunComplete, reachLevel, leave],
   );
 
   return (

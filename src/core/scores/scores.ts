@@ -4,9 +4,11 @@ export interface GameStats {
   bestScore: number;
   playCount: number;
   lastPlayedAt: number | null;
+  /** Furthest level unlocked; 1 for games without levels. */
+  reachedLevel: number;
 }
 
-const EMPTY: GameStats = { bestScore: 0, playCount: 0, lastPlayedAt: null };
+const EMPTY: GameStats = { bestScore: 0, playCount: 0, lastPlayedAt: null, reachedLevel: 1 };
 
 function nonNegativeInt(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
@@ -20,6 +22,18 @@ export function sanitizeStats(record: Partial<GameStatsRecord> | undefined): Gam
     bestScore: nonNegativeInt(record.bestScore),
     playCount: nonNegativeInt(record.playCount),
     lastPlayedAt: typeof last === 'number' && Number.isFinite(last) ? last : null,
+    reachedLevel: Math.max(1, nonNegativeInt(record.reachedLevel)),
+  };
+}
+
+/** Back to the stored shape. Writes always go through this, so no field is ever dropped. */
+function toRecord(gameId: string, stats: GameStats): GameStatsRecord {
+  return {
+    gameId,
+    bestScore: stats.bestScore,
+    playCount: stats.playCount,
+    lastPlayedAt: stats.lastPlayedAt ?? 0,
+    reachedLevel: stats.reachedLevel,
   };
 }
 
@@ -35,13 +49,30 @@ export async function recordRun(
 ): Promise<GameStats> {
   return db.transaction('rw', db.gameStats, async () => {
     const current = sanitizeStats(await db.gameStats.get(gameId));
-    const next: GameStatsRecord = {
-      gameId,
+    const next: GameStats = {
+      ...current,
       bestScore: Math.max(current.bestScore, nonNegativeInt(score)),
       playCount: current.playCount + 1,
       lastPlayedAt: now,
     };
-    await db.gameStats.put(next);
-    return sanitizeStats(next);
+    await db.gameStats.put(toRecord(gameId, next));
+    return next;
+  });
+}
+
+/** Unlocks up to `level`. Never goes backwards, and leaves scores untouched. */
+export async function recordLevelReached(
+  gameId: string,
+  level: number,
+  db: AppDb = defaultDb,
+): Promise<GameStats> {
+  return db.transaction('rw', db.gameStats, async () => {
+    const current = sanitizeStats(await db.gameStats.get(gameId));
+    const next: GameStats = {
+      ...current,
+      reachedLevel: Math.max(current.reachedLevel, nonNegativeInt(level)),
+    };
+    await db.gameStats.put(toRecord(gameId, next));
+    return next;
   });
 }

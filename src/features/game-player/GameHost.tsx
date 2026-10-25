@@ -35,6 +35,10 @@ export function GameHost({ game, services }: Props) {
       sfx: servicesRef.current.sfx,
       beginRun: () => servicesRef.current.beginRun(),
       bestScore: servicesRef.current.bestScore,
+      progress: {
+        reachedLevel: servicesRef.current.progress.reachedLevel,
+        reachLevel: (level) => servicesRef.current.progress.reachLevel(level),
+      },
       onRunComplete: (r) => servicesRef.current.onRunComplete(r),
       onExitRequested: () => servicesRef.current.onExitRequested(),
     };

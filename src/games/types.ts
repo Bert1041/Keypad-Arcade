@@ -9,7 +9,7 @@ export type { RandomFn };
  */
 
 /** Stable IDs. Saved scores are keyed by these, so never rename one after it ships. */
-export type GameId = 'coil' | 'star-raid' | 'prototype';
+export type GameId = 'coil' | 'star-raid' | 'rebound' | 'prototype';
 
 export type Orientation = 'portrait' | 'landscape' | 'any';
 
@@ -20,6 +20,13 @@ export interface RunResult {
 export interface SoundEffects {
   /** Short synthesized tone. A no-op when sound is disabled in settings. */
   blip(frequencyHz: number, durationMs?: number): void;
+}
+
+export interface LevelProgress {
+  /** Furthest level unlocked at launch (1 = the first). Track later unlocks yourself. */
+  reachedLevel: number;
+  /** Record that `level` is now unlocked. Never goes backwards. */
+  reachLevel(level: number): void;
 }
 
 /** What the shell hands to a game. Games must not reach into React or storage directly. */
@@ -33,6 +40,8 @@ export interface GameServices {
   beginRun(): RandomFn;
   /** Personal best at launch, so the game can show "new best". */
   bestScore: number;
+  /** For games with levels: where the player has got to, saved by the shell. */
+  progress: LevelProgress;
   /** Called once per finished run. The shell persists it. */
   onRunComplete(result: RunResult): void;
   /** In-game request to leave (e.g. Escape key). */

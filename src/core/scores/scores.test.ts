@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppDb } from '@/core/storage/db';
-import { getStats, recordRun, sanitizeStats } from './scores';
+import { getStats, recordLevelReached, recordRun, sanitizeStats } from './scores';
 
 let db: AppDb;
 let n = 0;
@@ -17,7 +17,7 @@ describe('recordRun', () => {
     await recordRun('prototype', 5, db, 1000);
     await recordRun('prototype', 3, db, 2000);
     const stats = await recordRun('prototype', 9, db, 3000);
-    expect(stats).toEqual({ bestScore: 9, playCount: 3, lastPlayedAt: 3000 });
+    expect(stats).toEqual({ bestScore: 9, playCount: 3, lastPlayedAt: 3000, reachedLevel: 1 });
     expect(await getStats('prototype', db)).toEqual(stats);
   });
 
@@ -42,13 +42,18 @@ describe('recordRun', () => {
       lastPlayedAt: null,
     } as never);
     const stats = await recordRun('prototype', 4, db, 50);
-    expect(stats).toEqual({ bestScore: 4, playCount: 1, lastPlayedAt: 50 });
+    expect(stats).toEqual({ bestScore: 4, playCount: 1, lastPlayedAt: 50, reachedLevel: 1 });
   });
 });
 
 describe('sanitizeStats', () => {
   it('returns empty stats for a missing record', () => {
-    expect(sanitizeStats(undefined)).toEqual({ bestScore: 0, playCount: 0, lastPlayedAt: null });
+    expect(sanitizeStats(undefined)).toEqual({
+      bestScore: 0,
+      playCount: 0,
+      lastPlayedAt: null,
+      reachedLevel: 1,
+    });
   });
 
   it('rejects negative and non-finite numbers', () => {
@@ -56,5 +61,35 @@ describe('sanitizeStats', () => {
       bestScore: 0,
       playCount: 0,
     });
+  });
+});
+
+describe('level progress', () => {
+  it('unlocks levels and never goes backwards', async () => {
+    expect((await recordLevelReached('rebound', 3, db)).reachedLevel).toBe(3);
+    expect((await recordLevelReached('rebound', 2, db)).reachedLevel).toBe(3);
+    expect((await getStats('rebound', db)).reachedLevel).toBe(3);
+  });
+
+  it('saving a score keeps the level progress', async () => {
+    await recordLevelReached('rebound', 4, db);
+    await recordRun('rebound', 120, db, 10);
+    expect(await getStats('rebound', db)).toMatchObject({ reachedLevel: 4, bestScore: 120 });
+  });
+
+  it('saving progress keeps the scores', async () => {
+    await recordRun('rebound', 120, db, 10);
+    await recordLevelReached('rebound', 2, db);
+    expect(await getStats('rebound', db)).toEqual({
+      bestScore: 120,
+      playCount: 1,
+      lastPlayedAt: 10,
+      reachedLevel: 2,
+    });
+  });
+
+  it('reads records saved before progress existed as level 1', async () => {
+    await db.gameStats.put({ gameId: 'rebound', bestScore: 5, playCount: 1, lastPlayedAt: 1 });
+    expect((await getStats('rebound', db)).reachedLevel).toBe(1);
   });
 });
