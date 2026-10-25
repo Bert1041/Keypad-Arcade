@@ -87,3 +87,24 @@
 .toast span {
   flex: 1;
 }
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.daily {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-small);
+  color: var(--accent);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  text-decoration: none;
+}
+.daily:hover,
+.daily:active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

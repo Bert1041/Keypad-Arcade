@@ -11,5 +11,6 @@ export const coil: GameDefinition = {
   description: 'Eat, grow, and don’t hit the walls — or yourself.',
   thumbnail,
   orientation: 'portrait',
+  daily: true,
   load: () => import('./createGame').then((m) => m.createGame),
 };

@@ -25,11 +25,17 @@ const OUTCOME_TEXT: Record<ShareOutcome, string> = {
 };
 
 function status(challenge: Challenge | null, lastRun: FinishedRun | null): string {
-  if (challenge) {
-    if (!lastRun) return `Challenge: beat ${challenge.beat}`;
-    if (lastRun.score > challenge.beat) return `You beat ${challenge.beat}!`;
-    return `${challenge.beat + 1 - lastRun.score} short of the challenge — again!`;
+  const beat = challenge?.beat ?? null;
+  const daily = challenge?.daily ? `Daily #${challenge.daily.number}` : null;
+  if (beat !== null) {
+    if (!lastRun) return daily ? `${daily}: beat ${beat}` : `Challenge: beat ${beat}`;
+    if (lastRun.score > beat) return `You beat ${beat}!`;
+    return `${beat + 1 - lastRun.score} short of the challenge — again!`;
   }
+  if (daily)
+    return lastRun
+      ? `${daily}: you scored ${lastRun.score}`
+      : `${daily} — the same run for everyone today`;
   return lastRun ? `Score ${lastRun.score}` : '';
 }
 
@@ -44,11 +50,16 @@ export function RunBar({ game, challenge, lastRun }: Props) {
   async function share(run: FinishedRun) {
     setBusy(true);
     setNote('');
-    const url = challengeUrl(window.location.origin, game.id, { seed: run.seed, beat: run.score });
-    const text = `I scored ${run.score} on ${game.title} in ${APP_NAME}. Same run, same game — can you beat me? ${url}`;
+    // A daily is shared as the day (anyone's daily for that date is the same run); anything else
+    // as the exact run that was played.
+    const daily = challenge?.daily ?? null;
+    const url = challengeUrl(window.location.origin, game.id, { seed: run.seed, daily }, run.score);
+    const text = daily
+      ? `${game.title} Daily #${daily.number}: I scored ${run.score} in ${APP_NAME}. Same run for everyone today — can you beat me? ${url}`
+      : `I scored ${run.score} on ${game.title} in ${APP_NAME}. Same run, same game — can you beat me? ${url}`;
     const image = await renderShareCard({
       appName: APP_NAME,
-      gameTitle: game.title,
+      gameTitle: daily ? `${game.title} · Daily #${daily.number}` : game.title,
       score: run.score,
       host: window.location.host,
     }).catch(() => undefined);
@@ -72,7 +83,9 @@ export function RunBar({ game, challenge, lastRun }: Props) {
           onClick={() => void share(lastRun)}
           data-testid="share-button"
         >
-          {challenge && lastRun.score > challenge.beat ? 'Brag' : 'Challenge a friend'}
+          {challenge?.beat != null && lastRun.score > challenge.beat
+            ? 'Brag'
+            : 'Challenge a friend'}
         </button>
       )}
     </footer>

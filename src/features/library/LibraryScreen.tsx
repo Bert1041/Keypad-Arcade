@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom';
 import { APP_NAME } from '@/appInfo';
 import { games } from '@/games/registry';
 import { getStats, type GameStats } from '@/core/scores/scores';
+import { dailyPath } from '@/core/challenge/challenge';
+import { dailyNumber, hasDaily, utcDate } from '@/core/challenge/daily';
 import { UpdatePrompt } from './UpdatePrompt';
 import styles from './LibraryScreen.module.css';
 
 export function LibraryScreen() {
   const [stats, setStats] = useState<Record<string, GameStats>>({});
+  const today = utcDate();
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +39,7 @@ export function LibraryScreen() {
         {games.map((game) => {
           const best = stats[game.id]?.bestScore ?? 0;
           return (
-            <li key={game.id}>
+            <li key={game.id} className={styles.item}>
               <Link
                 to={`/play/${game.id}`}
                 className={styles.card}
@@ -49,6 +52,15 @@ export function LibraryScreen() {
                   Best: {best}
                 </span>
               </Link>
+              {game.daily && hasDaily(today) && (
+                <Link
+                  to={dailyPath(game.id, today)}
+                  className={styles.daily}
+                  data-testid={`daily-${game.id}`}
+                >
+                  Daily #{dailyNumber(today)}
+                </Link>
+              )}
             </li>
           );
         })}

@@ -11,5 +11,6 @@ export const starRaid: GameDefinition = {
   description: 'Hold the line against wave after wave. Drag to steer; you fire automatically.',
   thumbnail,
   orientation: 'portrait',
+  daily: true,
   load: () => import('./createGame').then((m) => m.createGame),
 };

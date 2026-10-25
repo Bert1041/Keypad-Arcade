@@ -5,6 +5,7 @@ import type { GameDefinition, GameServices, RunResult } from '@/games/types';
 import { getStats, recordLevelReached, recordRun, type GameStats } from '@/core/scores/scores';
 import { createSfx } from '@/core/audio/sfx';
 import { parseChallenge, type Challenge } from '@/core/challenge/challenge';
+import { utcDate } from '@/core/challenge/daily';
 import { createRunSeeds } from '@/core/random/runSeeds';
 import { TopBar } from '@/components/TopBar';
 import { useLeave } from '@/app/useLeave';
@@ -20,7 +21,11 @@ export function GamePlayerScreen() {
   const [searchParams] = useSearchParams();
   const game = findGame(gameId);
   const query = searchParams.toString();
-  const challenge = useMemo(() => parseChallenge(new URLSearchParams(query)), [query]);
+  // A game id that is not registered falls through to the redirect below.
+  const challenge = useMemo(
+    () => (game ? parseChallenge(new URLSearchParams(query), game, utcDate()) : null),
+    [game, query],
+  );
 
   if (!game) return <Navigate to="/" replace />;
   // A new key per game and per challenge: switching remounts with fresh state.

@@ -67,8 +67,11 @@ V1 stays local-first and serverless. That does **not** rule out sharing:
 > **This departs from the README**, which excludes "social features" from V1. Approved as D1.
 
 **Status (2026-10-25):** 1 and 2 are built and tested (seeded runs via `GameServices.beginRun`,
-`/play/:id?seed=&beat=` links, PNG score card, share sheet → text → clipboard fallback). 3 (daily
-seed) is not built. Link previews have title/description; the preview **image needs the
+`/play/:id?seed=&beat=` links, PNG score card, share sheet → text → clipboard fallback). 3 is built
+too (2026-10-25): Coil and Star Raid have a numbered daily (`?daily=YYYY-MM-DD`), the same run for
+everyone on a UTC day, shared as "Coil Daily #12: 230". Rebound has none — its levels are the same
+every day. **At launch, set `DAILY_EPOCH` (src/core/challenge/daily.ts) to the launch date** so the
+first day is Daily #1. Link previews have title/description; the preview **image needs the
 production domain** (absolute `og:image` URL).
 
 **Rule for every game:** all gameplay randomness must come from the function `beginRun()`

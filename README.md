@@ -1,7 +1,8 @@
 # Keypad Arcade
 
 Original pocket games inspired by the phones we grew up with — an installable, offline web app
-(PWA). Finish a run, send a friend the exact same run on WhatsApp, and dare them to beat you.
+(PWA). Finish a run, send a friend the exact same run on WhatsApp, and dare them to beat you — or
+play the day's daily, the same run for everyone.
 
 **Status:** Game host, saving, offline and the challenge/share loop are built and tested. Launch
 lineup: **Coil** (snake, built), **Star Raid** (shooter, built), **Rebound** (ball platformer, next).

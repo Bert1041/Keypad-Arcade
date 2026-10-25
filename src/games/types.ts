@@ -64,6 +64,11 @@ export interface GameDefinition {
   description: string;
   thumbnail: string;
   orientation: Orientation;
+  /**
+   * Has a daily challenge: one seeded run per day, the same for everyone. Only for games whose
+   * runs come from beginRun()'s seed — a game without randomness would be the same every day.
+   */
+  daily?: boolean;
   /** Lazy so the library never downloads Phaser; the service worker still precaches it. */
   load(): Promise<CreateGame>;
 }
