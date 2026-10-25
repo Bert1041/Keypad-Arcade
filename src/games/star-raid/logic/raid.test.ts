@@ -3,6 +3,11 @@ import { seededRandom } from '@/core/random/seededRandom';
 import {
   ENEMY,
   HEIGHT,
+  MAX_LIVES,
+  POWER_MS,
+  SHIELD_GRACE_MS,
+  rollDrop,
+  type PowerKind,
   INVULNERABLE_MS,
   NO_INPUT,
   SHIP_Y,
@@ -225,5 +230,128 @@ describe('challenge fairness', () => {
     const n = Math.min(still.met.length, weaving.met.length);
     expect(n).toBeGreaterThan(10);
     expect(weaving.met.slice(0, n)).toEqual(still.met.slice(0, n));
+  });
+});
+
+describe('power-ups', () => {
+  /** Puts a power-up right on the ship, so the next step catches it. */
+  function give(s: RaidState, kind: PowerKind) {
+    s.powerUps.push({ id: 99, kind, x: s.ship.x, y: SHIP_Y });
+    return tick(s, NO_INPUT, never);
+  }
+
+  /** Shots fired in `ms`, counting each volley's bullets. */
+  function shotsFired(s: RaidState, ms: number) {
+    let fired = 0;
+    for (let t = 0; t < ms; t += STEP_MS) {
+      const before = s.shots.length;
+      tick(s, NO_INPUT, never);
+      fired += Math.max(0, s.shots.length - before);
+    }
+    return fired;
+  }
+
+  it('a carrier joins waves 2, 6, 10 … and no others, holding a power-up', () => {
+    // Listed, not computed from hasCarrier(): a test that asks the code what to expect agrees
+    // with whatever the code does.
+    const withCarrier = new Set([2, 6, 10, 14]);
+    for (let wave = 0; wave < 16; wave++) {
+      const carriers = generateWave(seededRandom(wave + 1), wave, 0).filter(
+        (sp) => sp.kind === 'carrier',
+      );
+      expect(carriers.length, `wave ${wave}`).toBe(withCarrier.has(wave) ? 1 : 0);
+      if (carriers[0]) expect(carriers[0].drop).toBeDefined();
+    }
+  });
+
+  it.each([
+    [0, 'twin'],
+    [0.299, 'twin'],
+    [0.3, 'rapid'],
+    [0.6, 'shield'],
+    [0.85, 'bomb'],
+    [0.95, 'life'],
+    [0.9999, 'life'],
+  ] as const)('a drop roll of %f holds %s', (roll, kind) => {
+    expect(rollDrop(roll)).toBe(kind);
+  });
+
+  it('destroying a carrier releases its power-up where it was', () => {
+    const s = quiet();
+    s.enemies.push(enemy({ kind: 'carrier', hp: 1, y: 300, drop: 'shield' }));
+    const events = runFor(s, 500);
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: 'powerup-dropped', kind: 'shield' }),
+    );
+    expect(s.powerUps).toHaveLength(1);
+    expect(s.powerUps[0]?.x).toBe(WIDTH / 2);
+  });
+
+  it('a falling power-up is caught by flying into it, and lost if missed', () => {
+    const caught = quiet();
+    caught.powerUps.push({ id: 1, kind: 'shield', x: WIDTH / 2, y: 200 });
+    const events = runFor(caught, 5000);
+    expect(events).toContainEqual({ type: 'powerup', kind: 'shield', x: WIDTH / 2 });
+    expect(caught.shield).toBe(true);
+
+    const missed = quiet();
+    missed.powerUps.push({ id: 1, kind: 'shield', x: 40, y: 200 });
+    runFor(missed, 5000);
+    expect(missed.shield).toBe(false);
+    expect(missed.powerUps).toHaveLength(0);
+  });
+
+  it('twin shot fires two streams for 10 s, then one', () => {
+    const s = quiet();
+    give(s, 'twin');
+    expect(shotsFired(s, 1000)).toBeGreaterThanOrEqual(12);
+    runFor(s, POWER_MS.twin);
+    expect(shotsFired(s, 1000)).toBeLessThanOrEqual(7);
+  });
+
+  it('rapid fire doubles the rate for 8 s', () => {
+    // Fire timing snaps to 60 Hz steps, so compare rates over a few seconds, not exact counts.
+    const normal = shotsFired(quiet(), 3000);
+    const s = quiet();
+    give(s, 'rapid');
+    const rapid = shotsFired(s, 3000);
+    expect(rapid / normal).toBeGreaterThan(1.8);
+    runFor(s, POWER_MS.rapid);
+    expect(shotsFired(s, 3000)).toBe(normal);
+  });
+
+  it('a shield soaks one hit, then hits cost lives again', () => {
+    const s = quiet();
+    give(s, 'shield');
+    s.enemyShots.push({ x: s.ship.x, y: SHIP_Y });
+    expect(tick(s, NO_INPUT, never)).toContainEqual({ type: 'shield-broken' });
+    expect(s.lives).toBe(START_LIVES);
+    expect(s.shield).toBe(false);
+    runFor(s, SHIELD_GRACE_MS);
+    s.enemyShots.push({ x: s.ship.x, y: SHIP_Y });
+    tick(s, NO_INPUT, never);
+    expect(s.lives).toBe(START_LIVES - 1);
+  });
+
+  it('a bomb destroys everything on screen, with points, and spares what has not arrived', () => {
+    const s = quiet();
+    s.enemies.push(
+      enemy({ id: 1, x: 40, cx: 40, y: 100 }),
+      enemy({ id: 2, kind: 'gunner', hp: 3, x: 300, cx: 300, y: 200 }),
+      enemy({ id: 3, x: 200, cx: 200, y: -15 }),
+    );
+    s.enemyShots.push({ x: 100, y: 300 });
+    give(s, 'bomb');
+    expect(s.score).toBe(ENEMY.drifter.points + ENEMY.gunner.points);
+    expect(s.enemies.map((e) => e.id)).toEqual([3]);
+    expect(s.enemyShots).toHaveLength(0);
+  });
+
+  it(`an extra life, up to ${MAX_LIVES}`, () => {
+    const s = quiet();
+    give(s, 'life');
+    expect(s.lives).toBe(START_LIVES + 1);
+    for (let i = 0; i < 5; i++) give(s, 'life');
+    expect(s.lives).toBe(MAX_LIVES);
   });
 });

@@ -7,17 +7,19 @@ import { BODY_FONT, INK, PIXEL_FONT } from '@/games/shared/style';
 import {
   HEIGHT,
   NO_INPUT,
+  POWER_MS,
   SHIP_Y,
   STEP_MS,
   WIDTH,
   createRaid,
   tick,
   type EnemyKind,
+  type PowerKind,
   type RaidEvent,
   type RaidInput,
   type RaidState,
 } from '../logic/raid';
-import { ENEMIES, PALETTE, SHIP } from './sprites';
+import { ENEMIES, PALETTE, POWER_COLOR, POWER_LABEL, POWER_UPS, SHIP } from './sprites';
 
 export const WORLD_WIDTH = WIDTH;
 export const WORLD_HEIGHT = HEIGHT;
@@ -28,7 +30,9 @@ const RETRY_DELAY_MS = 600;
 const MAX_FRAME_MS = 250;
 const STAR_COUNT = 60;
 
-const ENEMY_KINDS: EnemyKind[] = ['drifter', 'weaver', 'gunner'];
+// Derived, not listed: a new enemy kind gets its texture without anyone remembering to add it.
+const ENEMY_KINDS = Object.keys(ENEMIES) as EnemyKind[];
+const POWER_KINDS = Object.keys(POWER_UPS) as PowerKind[];
 
 export class RaidScene extends Phaser.Scene {
   private state!: RaidState;
@@ -42,6 +46,9 @@ export class RaidScene extends Phaser.Scene {
   private overAt = 0;
   private ship!: Phaser.GameObjects.Image;
   private enemySprites = new Map<number, Phaser.GameObjects.Image>();
+  private powerSprites = new Map<number, Phaser.GameObjects.Image>();
+  /** Shield ring and power-up timers. */
+  private effectsGfx!: Phaser.GameObjects.Graphics;
   private shotsGfx!: Phaser.GameObjects.Graphics;
   private stars!: Phaser.GameObjects.Graphics;
   private scoreText!: Phaser.GameObjects.Text;
@@ -66,8 +73,18 @@ export class RaidScene extends Phaser.Scene {
     this.started = false;
     this.over = false;
     this.enemySprites.clear();
+    this.powerSprites.clear();
 
     makePixelTexture(this, 'raid-ship', SHIP, PALETTE.ship);
+    for (const kind of POWER_KINDS)
+      // Drawn larger than the ships: a power-up must be recognisable before you chase it.
+      makePixelTexture(
+        this,
+        `raid-power-${kind}`,
+        POWER_UPS[kind],
+        { a: POWER_COLOR[kind], b: 0xeef0f8 },
+        3,
+      );
     for (const kind of ENEMY_KINDS)
       makePixelTexture(this, `raid-${kind}`, ENEMIES[kind], PALETTE[kind]);
 
@@ -78,6 +95,7 @@ export class RaidScene extends Phaser.Scene {
       .text(12, 14, '0', { fontFamily: PIXEL_FONT, fontSize: '16px', color: INK.text })
       .setDepth(10);
     this.livesGfx = this.add.graphics().setDepth(10);
+    this.effectsGfx = this.add.graphics().setDepth(5);
     this.hint = this.add
       .text(WIDTH / 2, HEIGHT / 2, 'Drag to steer · auto-fire\nTap to start', {
         fontFamily: BODY_FONT,
@@ -175,12 +193,68 @@ export class RaidScene extends Phaser.Scene {
         this.cameras.main.shake(200, 0.01);
         this.services.sfx.blip(140, 160);
         break;
+      case 'powerup-dropped':
+        this.services.sfx.blip(780, 60);
+        break;
+      case 'powerup':
+        this.services.sfx.blip(1040, 140);
+        this.popLabel(event.x, POWER_LABEL[event.kind], POWER_COLOR[event.kind]);
+        if (event.kind === 'bomb') this.cameras.main.flash(250, 255, 255, 255);
+        break;
+      case 'shield-broken':
+        this.cameras.main.shake(120, 0.006);
+        this.services.sfx.blip(260, 120);
+        break;
       case 'died':
         this.endRun();
         break;
       case 'wave':
       case 'spawn':
         break;
+    }
+  }
+
+  /** Floats the power-up's name up from the ship, so a catch is never missed. */
+  private popLabel(x: number, text: string, color: number) {
+    const label = this.add
+      .text(Phaser.Math.Clamp(x, 70, WIDTH - 70), SHIP_Y - 40, text, {
+        fontFamily: PIXEL_FONT,
+        fontSize: '12px',
+        color: `#${color.toString(16).padStart(6, '0')}`,
+      })
+      .setOrigin(0.5)
+      .setDepth(20);
+    this.tweens.add({
+      targets: label,
+      y: SHIP_Y - 90,
+      alpha: 0,
+      duration: 900,
+      onComplete: () => label.destroy(),
+    });
+  }
+
+  /** One image per live object: create new ones, move the rest, destroy the gone. */
+  private syncSprites<T extends { id: number; y: number }>(
+    sprites: Map<number, Phaser.GameObjects.Image>,
+    items: readonly T[],
+    texture: (item: T) => string,
+    x: (item: T) => number,
+  ) {
+    const alive = new Set<number>();
+    for (const item of items) {
+      alive.add(item.id);
+      let sprite = sprites.get(item.id);
+      if (!sprite) {
+        sprite = this.add.image(x(item), item.y, texture(item));
+        sprites.set(item.id, sprite);
+      }
+      sprite.setPosition(x(item), item.y);
+    }
+    for (const [id, sprite] of sprites) {
+      if (!alive.has(id)) {
+        sprite.destroy();
+        sprites.delete(id);
+      }
     }
   }
 
@@ -220,21 +294,36 @@ export class RaidScene extends Phaser.Scene {
     // Blink while invulnerable.
     this.ship.setVisible(s.invulnerableMs === 0 || Math.floor(time / 100) % 2 === 0);
 
-    const alive = new Set<number>();
-    for (const enemy of s.enemies) {
-      alive.add(enemy.id);
-      let sprite = this.enemySprites.get(enemy.id);
-      if (!sprite) {
-        sprite = this.add.image(enemy.cx, enemy.y, `raid-${enemy.kind}`);
-        this.enemySprites.set(enemy.id, sprite);
-      }
-      sprite.setPosition(enemy.cx, enemy.y);
+    this.syncSprites(
+      this.enemySprites,
+      s.enemies,
+      (e) => `raid-${e.kind}`,
+      (e) => e.cx,
+    );
+    this.syncSprites(
+      this.powerSprites,
+      s.powerUps,
+      (p) => `raid-power-${p.kind}`,
+      (p) => p.x,
+    );
+
+    const fx = this.effectsGfx;
+    fx.clear();
+    if (s.shield) {
+      fx.lineStyle(2, POWER_COLOR.shield, 0.9);
+      fx.strokeCircle(s.ship.x, SHIP_Y, 20);
     }
-    for (const [id, sprite] of this.enemySprites) {
-      if (!alive.has(id)) {
-        sprite.destroy();
-        this.enemySprites.delete(id);
-      }
+    // Remaining time of timed power-ups, as bars under the score.
+    const timers: [PowerKind, number, number][] = [
+      ['twin', s.twinMs, POWER_MS.twin],
+      ['rapid', s.rapidMs, POWER_MS.rapid],
+    ];
+    let row = 0;
+    for (const [kind, left, total] of timers) {
+      if (left <= 0) continue;
+      fx.fillStyle(POWER_COLOR[kind]);
+      fx.fillRect(12, 40 + row * 8, 60 * (left / total), 4);
+      row += 1;
     }
 
     const g = this.shotsGfx;

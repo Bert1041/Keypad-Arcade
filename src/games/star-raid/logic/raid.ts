@@ -23,18 +23,53 @@ const ENEMY_HITBOX = { w: 24, h: 20 };
 const SHOT_HITBOX = { w: 4, h: 10 };
 
 const FIRE_EVERY_MS = 160;
+const RAPID_FIRE_EVERY_MS = 80;
+/** Twin shot: two streams this far either side of the ship's centre. */
+const TWIN_OFFSET = 7;
 const SHOT_SPEED = 640;
 const ENEMY_SHOT_SPEED = 240;
 export const START_LIVES = 3;
+export const MAX_LIVES = 5;
 export const INVULNERABLE_MS = 1500;
+/** After a shield soaks a hit: long enough to get clear, shorter than losing a life. */
+export const SHIELD_GRACE_MS = 800;
 
-export type EnemyKind = 'drifter' | 'weaver' | 'gunner';
+export type EnemyKind = 'drifter' | 'weaver' | 'gunner' | 'carrier';
 
 export const ENEMY: Record<EnemyKind, { hp: number; points: number }> = {
   drifter: { hp: 1, points: 10 },
   weaver: { hp: 2, points: 20 },
   gunner: { hp: 3, points: 30 },
+  carrier: { hp: 2, points: 50 },
 };
+
+export type PowerKind = 'twin' | 'rapid' | 'shield' | 'bomb' | 'life';
+
+export const POWER_MS = { twin: 10_000, rapid: 8_000 } as const;
+const POWER_FALL_SPEED = 100;
+/** Generous on purpose: a catch you almost made should count. */
+const POWER_HITBOX = { w: 26, h: 26 };
+
+/** Which power-up a carrier holds, rolled when its wave is generated. */
+const DROP_TABLE: [PowerKind, number][] = [
+  ['twin', 0.3],
+  ['rapid', 0.3],
+  ['shield', 0.25],
+  ['bomb', 0.1],
+  ['life', 0.05],
+];
+
+export function rollDrop(roll: number): PowerKind {
+  let acc = 0;
+  for (const [kind, weight] of DROP_TABLE) {
+    acc += weight;
+    if (roll < acc) return kind;
+  }
+  return 'twin';
+}
+
+/** A carrier joins waves 2, 6, 10, … */
+export const hasCarrier = (wave: number) => wave % 4 === 2;
 
 /** One enemy in a wave's schedule, fixed when the wave is generated. */
 export interface Spawn {
@@ -46,6 +81,8 @@ export interface Spawn {
   amplitude: number;
   /** Gunner: ms until its first shot. */
   firstShotMs: number;
+  /** Carrier: the power-up it releases when destroyed. */
+  drop?: PowerKind;
 }
 
 export interface Enemy extends Spawn {
@@ -63,6 +100,13 @@ export interface Shot {
   y: number;
 }
 
+export interface PowerUp {
+  id: number;
+  kind: PowerKind;
+  x: number;
+  y: number;
+}
+
 export interface RaidState {
   timeMs: number;
   ship: { x: number };
@@ -74,10 +118,17 @@ export interface RaidState {
   enemies: Enemy[];
   shots: Shot[];
   enemyShots: Shot[];
+  powerUps: PowerUp[];
+  twinMs: number;
+  rapidMs: number;
+  shield: boolean;
   pending: Spawn[];
   wave: number;
   nextWaveAtMs: number;
+  /** Enemy ids: depend only on the seed and the clock, never on play. */
   nextId: number;
+  /** Separate, because power-ups depend on what the player destroys. */
+  nextPowerId: number;
   alive: boolean;
 }
 
@@ -96,6 +147,9 @@ export type RaidEvent =
   | { type: 'enemy-hit'; x: number; y: number }
   | { type: 'kill'; kind: EnemyKind; x: number; y: number }
   | { type: 'ship-hit'; livesLeft: number }
+  | { type: 'shield-broken' }
+  | { type: 'powerup-dropped'; kind: PowerKind; x: number; y: number }
+  | { type: 'powerup'; kind: PowerKind; x: number }
   | { type: 'died' };
 
 export function waveIntervalMs(wave: number): number {
@@ -119,6 +173,18 @@ export function generateWave(random: RandomFn, wave: number, startMs: number): S
       firstShotMs: 500 + random() * 900,
     });
   }
+  if (hasCarrier(wave)) {
+    // After the rest of the wave, and from the same seed: everyone gets the same chance.
+    spawns.push({
+      atMs: startMs + count * 220 + 400,
+      kind: 'carrier',
+      x: 40 + random() * (WIDTH - 80),
+      speed: 60 + random() * 20,
+      amplitude: 0,
+      firstShotMs: 0,
+      drop: rollDrop(random()),
+    });
+  }
   return spawns;
 }
 
@@ -134,10 +200,15 @@ export function createRaid(): RaidState {
     enemies: [],
     shots: [],
     enemyShots: [],
+    powerUps: [],
+    twinMs: 0,
+    rapidMs: 0,
+    shield: false,
     pending: [],
     wave: 0,
     nextWaveAtMs: 1000,
     nextId: 1,
+    nextPowerId: 1,
     alive: true,
   };
 }
@@ -163,6 +234,17 @@ export function tick(state: RaidState, input: RaidInput, random: RandomFn): Raid
   const events: RaidEvent[] = [];
   const dt = STEP_MS / 1000;
   state.timeMs += STEP_MS;
+
+  const kill = (enemy: Enemy) => {
+    enemy.hp = 0;
+    state.score += ENEMY[enemy.kind].points;
+    state.kills += 1;
+    events.push({ type: 'kill', kind: enemy.kind, x: enemy.cx, y: enemy.y });
+    if (enemy.drop) {
+      state.powerUps.push({ id: state.nextPowerId++, kind: enemy.drop, x: enemy.cx, y: enemy.y });
+      events.push({ type: 'powerup-dropped', kind: enemy.drop, x: enemy.cx, y: enemy.y });
+    }
+  };
 
   // Waves, on the clock.
   while (state.timeMs >= state.nextWaveAtMs) {
@@ -197,12 +279,19 @@ export function tick(state: RaidState, input: RaidInput, random: RandomFn): Raid
   }
   ship.x = Math.max(SHIP_MIN_X, Math.min(SHIP_MAX_X, ship.x));
   state.invulnerableMs = Math.max(0, state.invulnerableMs - STEP_MS);
+  state.twinMs = Math.max(0, state.twinMs - STEP_MS);
+  state.rapidMs = Math.max(0, state.rapidMs - STEP_MS);
 
   // Auto-fire.
   state.fireInMs -= STEP_MS;
   if (state.fireInMs <= 0) {
-    state.shots.push({ x: ship.x, y: SHIP_Y - 16 });
-    state.fireInMs += FIRE_EVERY_MS;
+    if (state.twinMs > 0) {
+      state.shots.push({ x: ship.x - TWIN_OFFSET, y: SHIP_Y - 14 });
+      state.shots.push({ x: ship.x + TWIN_OFFSET, y: SHIP_Y - 14 });
+    } else {
+      state.shots.push({ x: ship.x, y: SHIP_Y - 16 });
+    }
+    state.fireInMs += state.rapidMs > 0 ? RAPID_FIRE_EVERY_MS : FIRE_EVERY_MS;
   }
   for (const shot of state.shots) shot.y -= SHOT_SPEED * dt;
   state.shots = state.shots.filter((s) => s.y > -20);
@@ -236,12 +325,39 @@ export function tick(state: RaidState, input: RaidInput, random: RandomFn): Raid
     if (enemy.hp > 0) {
       events.push({ type: 'enemy-hit', x: enemy.cx, y: enemy.y });
     } else {
-      state.score += ENEMY[enemy.kind].points;
-      state.kills += 1;
-      events.push({ type: 'kill', kind: enemy.kind, x: enemy.cx, y: enemy.y });
+      kill(enemy);
     }
   }
   state.shots = state.shots.filter((s) => s.y > -20);
+
+  // Power-ups fall; the ship catches them.
+  for (const power of state.powerUps) power.y += POWER_FALL_SPEED * dt;
+  const caught = state.powerUps.filter((p) =>
+    overlaps(ship.x, SHIP_Y, SHIP_HITBOX, p.x, p.y, POWER_HITBOX),
+  );
+  state.powerUps = state.powerUps.filter((p) => !caught.includes(p) && p.y < HEIGHT + 20);
+  for (const power of caught) {
+    events.push({ type: 'powerup', kind: power.kind, x: power.x });
+    switch (power.kind) {
+      case 'twin':
+        state.twinMs = POWER_MS.twin;
+        break;
+      case 'rapid':
+        state.rapidMs = POWER_MS.rapid;
+        break;
+      case 'shield':
+        state.shield = true;
+        break;
+      case 'life':
+        state.lives = Math.min(MAX_LIVES, state.lives + 1);
+        break;
+      case 'bomb':
+        // Everything on screen; enemies still entering are spared, as with shots.
+        for (const enemy of state.enemies) if (enemy.hp > 0 && enemy.y > 0) kill(enemy);
+        state.enemyShots = [];
+        break;
+    }
+  }
 
   // The ship is hit by an enemy or an enemy shot (rammers are destroyed, without points).
   if (state.invulnerableMs === 0) {
@@ -254,6 +370,12 @@ export function tick(state: RaidState, input: RaidInput, random: RandomFn): Raid
     if (rammer || bullet) {
       if (rammer) rammer.hp = 0;
       if (bullet) bullet.y = HEIGHT + 100;
+    }
+    if ((rammer || bullet) && state.shield) {
+      state.shield = false;
+      state.invulnerableMs = SHIELD_GRACE_MS;
+      events.push({ type: 'shield-broken' });
+    } else if (rammer || bullet) {
       state.lives -= 1;
       state.invulnerableMs = INVULNERABLE_MS;
       events.push({ type: 'ship-hit', livesLeft: state.lives });

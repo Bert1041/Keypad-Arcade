@@ -12,17 +12,21 @@ import { expectOneRunningGame, readDb } from './helpers';
 
 // Fixture seeds, found by simulation: each run ends within ~20 s and scores, so matching the
 // predicted score proves the real game followed the seed and the input.
-const SEED_IDLE = 237; // the ship never moves
-const SEED_LEFT = 1390; // the ship is held at the left edge; idle, this seed would score 500
+const SEED_IDLE = 694; // the ship never moves, and catches a power-up on the way
+const SEED_LEFT = 128; // the ship is held at the left edge; idle, this seed would score 690
 
 /** What the rules say a run scores with this seed and a constant input. */
-function simulate(seed: number, input: RaidInput): { score: number; durationMs: number } {
+function simulate(seed: number, input: RaidInput) {
   const random = seededRandom(seed);
   const state = createRaid();
-  for (let t = 0; state.alive && t < 60_000; t += STEP_MS) tick(state, input, random);
+  const caught: string[] = [];
+  for (let t = 0; state.alive && t < 60_000; t += STEP_MS) {
+    for (const event of tick(state, input, random))
+      if (event.type === 'powerup') caught.push(event.kind);
+  }
   expect(state.alive, 'fixture run must end').toBe(false);
   expect(state.score, 'fixture run must score').toBeGreaterThan(0);
-  return { score: state.score, durationMs: state.timeMs };
+  return { score: state.score, durationMs: state.timeMs, caught };
 }
 const predicted = (seed: number, input: RaidInput) => simulate(seed, input).score;
 
@@ -34,7 +38,9 @@ async function canvasCentre(page: Page) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
-test('waits for a tap, then plays the run the seed defines', async ({ page }) => {
+test('waits for a tap, then plays the run the seed defines, power-up included', async ({
+  page,
+}) => {
   test.setTimeout(60_000);
   await page.goto(`/play/star-raid?seed=${SEED_IDLE}&beat=9999`);
   await expectOneRunningGame(page);
@@ -43,6 +49,8 @@ test('waits for a tap, then plays the run the seed defines', async ({ page }) =>
 
   // A tap without movement starts the run and leaves the ship where it is.
   const run = simulate(SEED_IDLE, NO_INPUT);
+  // So matching the score also proves a power-up was caught and worked in the real game.
+  expect(run.caught, 'fixture run must catch a power-up').not.toEqual([]);
   const { x, y } = await canvasCentre(page);
   await page.mouse.click(x, y);
   const tappedAt = Date.now();
