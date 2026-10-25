@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppDb } from '@/core/storage/db';
-import { getStats, recordLevelReached, recordRun, sanitizeStats } from './scores';
+import { getStats, onStatsChanged, recordLevelReached, recordRun, sanitizeStats } from './scores';
 
 let db: AppDb;
 let n = 0;
@@ -91,5 +91,20 @@ describe('level progress', () => {
   it('reads records saved before progress existed as level 1', async () => {
     await db.gameStats.put({ gameId: 'rebound', bestScore: 5, playCount: 1, lastPlayedAt: 1 });
     expect((await getStats('rebound', db)).reachedLevel).toBe(1);
+  });
+});
+
+describe('onStatsChanged', () => {
+  it('tells listeners after each save has landed, and stops when unsubscribed', async () => {
+    const seen: number[] = [];
+    const off = onStatsChanged(() => {
+      void getStats('coil', db).then((s) => seen.push(s.bestScore));
+    });
+    await recordRun('coil', 30, db);
+    await recordLevelReached('coil', 2, db);
+    off();
+    await recordRun('coil', 50, db);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(seen).toEqual([30, 30]); // read after each save: the new value is already there
   });
 });

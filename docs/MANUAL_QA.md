@@ -94,6 +94,8 @@ Also found and fixed:
 - **One-column library on a 320 px phone**, each thumbnail screen-wide. Two columns now.
 - **Rebound's pad with two fingers** (hold ▶, tap JUMP) had no test; it works, and is now tested.
 
-Open, needing a decision: **leaving a run before it ends discards its score** in every game. For
-Coil and Star Raid that is the arcade convention; in Rebound, where a run lasts minutes, a player
-who quits after level 6 keeps their level progress but their score is never recorded.
+- **Leaving a Rebound run before it ends discarded its score** (a run lasts minutes; quitting
+  after level 6 kept the level but never recorded the score). Now saved on the way out, by Back or
+  from the pause screen, and the library updates to show it. Coil and Star Raid still discard a
+  run left early — the arcade convention for minute-long runs. Tested: both ways out, leaving
+  before scoring (nothing recorded), and leaving after game over (counted once, not twice).

@@ -11,6 +11,7 @@ Inspired by Bounce / Bounce Tales. Original name, art, levels and presentation.
 | Pickups | Rings (required), gems, extra lives. Checkpoints keep where you respawn. |
 | Sizes and water | Pads: shrink (`s`), normal (`n`), grow (`g`). A small ball fits through gaps; a big ball floats in water; others sink slowly and can swim up. Growing needs room. |
 | Moving platforms | Solid, there-and-back paths; you ride along. |
+| Leaving mid-run | Back, Esc or "Back to library" while paused saves the score so far as a finished run (a run that has not scored yet is not counted). Coil and Star Raid discard a run left early — the arcade convention for runs that last a minute. |
 | Progress | The furthest level reached is saved by the shell (`services.progress`), unlocked the moment a level is cleared. |
 | Randomness | None: hand-made levels, the same for everyone. A challenge link means the same levels and a score to beat. |
 | Simulation | `logic/rebound.ts`: fixed 60 Hz steps, no Phaser. |

@@ -8,6 +8,23 @@ export interface GameStats {
   reachedLevel: number;
 }
 
+const listeners = new Set<() => void>();
+
+/**
+ * Called after any score or progress write has been saved. A save can land after a screen has
+ * already read the scores — leaving a game saves on the way out — so readers listen instead of
+ * reading once. Returns the unsubscribe function.
+ */
+export function onStatsChanged(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function changed<T>(saved: T): T {
+  for (const listener of listeners) listener();
+  return saved;
+}
+
 const EMPTY: GameStats = { bestScore: 0, playCount: 0, lastPlayedAt: null, reachedLevel: 1 };
 
 function nonNegativeInt(value: unknown): number {
@@ -47,7 +64,7 @@ export async function recordRun(
   db: AppDb = defaultDb,
   now: number = Date.now(),
 ): Promise<GameStats> {
-  return db.transaction('rw', db.gameStats, async () => {
+  const saved = await db.transaction('rw', db.gameStats, async () => {
     const current = sanitizeStats(await db.gameStats.get(gameId));
     const next: GameStats = {
       ...current,
@@ -58,6 +75,7 @@ export async function recordRun(
     await db.gameStats.put(toRecord(gameId, next));
     return next;
   });
+  return changed(saved);
 }
 
 /** Unlocks up to `level`. Never goes backwards, and leaves scores untouched. */
@@ -66,7 +84,7 @@ export async function recordLevelReached(
   level: number,
   db: AppDb = defaultDb,
 ): Promise<GameStats> {
-  return db.transaction('rw', db.gameStats, async () => {
+  const saved = await db.transaction('rw', db.gameStats, async () => {
     const current = sanitizeStats(await db.gameStats.get(gameId));
     const next: GameStats = {
       ...current,
@@ -75,4 +93,5 @@ export async function recordLevelReached(
     await db.gameStats.put(toRecord(gameId, next));
     return next;
   });
+  return changed(saved);
 }

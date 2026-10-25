@@ -1,8 +1,8 @@
 import { type Page } from '@playwright/test';
 import { LEVEL_FILES, LEVELS } from '../src/games/rebound/levels';
 import { playScript } from '../src/games/rebound/logic/replay';
-import { expect, test } from './fixtures';
-import { expectOneRunningGame, readDb } from './helpers';
+import { expect, press, test } from './fixtures';
+import { expectNoGames, expectOneRunningGame, readDb } from './helpers';
 
 const debug = (page: Page) => page.evaluate(() => window.__REBOUND_DEBUG__?.() ?? null);
 const lastScore = (page: Page) => page.getByTestId('run-bar').getAttribute('data-last-score');
@@ -97,9 +97,9 @@ test('keyboard: Space starts, the arrow keys roll', async ({ page, isMobile }) =
   await expect.poll(() => debug(page)).toMatchObject({ started: true, level: 1 });
   const startX = (await debug(page))?.x ?? 0;
   await page.keyboard.down('ArrowRight');
-  await page.waitForTimeout(800);
+  // Poll while held: a fixed hold covered less ground when the machine was busy (flaked in a full run).
+  await expect.poll(async () => (await debug(page))?.x ?? 0).toBeGreaterThan(startX + 48);
   await page.keyboard.up('ArrowRight');
-  expect((await debug(page))?.x).toBeGreaterThan(startX + 48);
 });
 
 test('two fingers: hold ▶ and tap JUMP — the ball jumps while it keeps rolling', async ({
@@ -143,8 +143,8 @@ test('two fingers: hold ▶ and tap JUMP — the ball jumps while it keeps rolli
   expect(end?.x ?? 0).toBeGreaterThan((start?.x ?? 0) + 24); // and kept rolling right
 });
 
-test('dying while holding a button does not restart the moment you let go', async ({ page }) => {
-  // Level 2 starts with spikes ahead: hold ▶ and the ball rolls into them, three lives running.
+/** Saves level 2 as reached, so the menu offers "Continue: level 2" (spikes right ahead). */
+async function unlockLevel2(page: Page) {
   await page.goto('/');
   await page.evaluate(
     () =>
@@ -165,6 +165,11 @@ test('dying while holding a button does not restart the moment you let go', asyn
         open.onerror = () => reject(open.error);
       }),
   );
+}
+
+test('dying while holding a button does not restart the moment you let go', async ({ page }) => {
+  // Level 2 starts with spikes ahead: hold ▶ and the ball rolls into them, three lives running.
+  await unlockLevel2(page);
   await page.goto('/play/rebound');
   await expectOneRunningGame(page);
   await tapWorld(page, MENU_FIRST.x, MENU_FIRST.y); // "Continue: level 2"
@@ -181,4 +186,62 @@ test('dying while holding a button does not restart the moment you let go', asyn
   // A fresh tap does restart.
   await tapWorld(page, 180, 240);
   await expect.poll(() => debug(page)).toMatchObject({ over: false, started: false });
+});
+
+for (const via of ['the Back button', 'the pause screen'] as const) {
+  test(`leaving mid-run through ${via} keeps the score earned so far`, async ({ page }) => {
+    await page.goto('/play/rebound');
+    await expectOneRunningGame(page);
+    await tapWorld(page, MENU_FIRST.x, MENU_FIRST.y);
+    await expect.poll(() => debug(page)).toMatchObject({ started: true });
+    // Roll right through the first ring.
+    const right = await at(page, PAD_RIGHT.x, PAD_RIGHT.y);
+    await page.mouse.move(right.x, right.y);
+    await page.mouse.down();
+    await expect.poll(async () => (await debug(page))?.score ?? 0).toBeGreaterThan(0);
+    await page.mouse.up();
+    const score = (await debug(page))?.score ?? 0;
+
+    if (via === 'the pause screen') {
+      await press(page.getByRole('button', { name: 'Pause' }));
+      await press(page.getByRole('dialog').getByRole('button', { name: 'Back to library' }));
+    } else {
+      await press(page.getByRole('button', { name: 'Back to library' }));
+    }
+    await expectNoGames(page); // torn down, paused or not
+    await expect
+      .poll(() => readDb(page, 'gameStats', 'rebound'))
+      .toMatchObject({ bestScore: score, playCount: 1 });
+    // The library opened before the save landed: it must update, not show the old best.
+    await expect(page.getByTestId('best-rebound')).toHaveText(`Best: ${score}`);
+  });
+}
+
+test('leaving before scoring records nothing', async ({ page }) => {
+  await page.goto('/play/rebound');
+  await expectOneRunningGame(page);
+  await tapWorld(page, MENU_FIRST.x, MENU_FIRST.y);
+  await expect.poll(() => debug(page)).toMatchObject({ started: true, score: 0 });
+  await press(page.getByRole('button', { name: 'Back to library' }));
+  await expectNoGames(page);
+  await page.waitForTimeout(300);
+  expect(await readDb(page, 'gameStats', 'rebound')).toBeUndefined();
+});
+
+test('leaving after game over does not count the run twice', async ({ page }) => {
+  await unlockLevel2(page);
+  await page.goto('/play/rebound');
+  await expectOneRunningGame(page);
+  await tapWorld(page, MENU_FIRST.x, MENU_FIRST.y);
+  await expect.poll(() => debug(page)).toMatchObject({ started: true, level: 2 });
+  const right = await at(page, PAD_RIGHT.x, PAD_RIGHT.y);
+  await page.mouse.move(right.x, right.y);
+  await page.mouse.down();
+  await expect.poll(() => debug(page), { timeout: 20_000 }).toMatchObject({ over: true });
+  await page.mouse.up();
+  await expect.poll(() => readDb(page, 'gameStats', 'rebound')).toMatchObject({ playCount: 1 });
+  await press(page.getByRole('button', { name: 'Back to library' }));
+  await expectNoGames(page);
+  await page.waitForTimeout(300);
+  expect(await readDb(page, 'gameStats', 'rebound')).toMatchObject({ playCount: 1 });
 });

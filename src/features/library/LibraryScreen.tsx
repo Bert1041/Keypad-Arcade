@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { APP_NAME } from '@/appInfo';
 import { games } from '@/games/registry';
-import { getStats, type GameStats } from '@/core/scores/scores';
+import { getStats, onStatsChanged, type GameStats } from '@/core/scores/scores';
 import { dailyPath } from '@/core/challenge/challenge';
 import { dailyNumber, hasDaily, utcDate } from '@/core/challenge/daily';
 import { UpdatePrompt } from './UpdatePrompt';
@@ -14,15 +14,20 @@ export function LibraryScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all(games.map(async (g) => [g.id, await getStats(g.id)] as const))
-      .then((entries) => {
-        if (!cancelled) setStats(Object.fromEntries(entries));
-      })
-      .catch(() => {
-        // Storage unavailable: show the library without scores.
-      });
+    const load = () =>
+      Promise.all(games.map(async (g) => [g.id, await getStats(g.id)] as const))
+        .then((entries) => {
+          if (!cancelled) setStats(Object.fromEntries(entries));
+        })
+        .catch(() => {
+          // Storage unavailable: show the library without scores.
+        });
+    void load();
+    // A game left a moment ago may still be saving its score.
+    const unsubscribe = onStatsChanged(() => void load());
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 

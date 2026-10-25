@@ -120,7 +120,7 @@ features by coordinate) rather than typed by hand, and checked by `parseLevel()`
 | Member | Use |
 |---|---|
 | `beginRun()` | Call at the start of every run; use the returned function for **all** randomness |
-| `onRunComplete({ score })` | Once per finished run; the shell saves it and shows the share bar |
+| `onRunComplete({ score })` | Once per finished run; the shell saves it and shows the share bar. May also be called as the game is torn down (scene `DESTROY`) to keep a run left early — the save still lands after the game screen has gone, so screens that show scores listen with `onStatsChanged` rather than reading once |
 | `onExitRequested()` | E.g. Esc; the shell navigates back |
 | `sfx.blip()` | Sound; silently does nothing when sound is off |
 | `bestScore` | Best at launch, for "new best!" (track later runs yourself) |

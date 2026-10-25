@@ -161,6 +161,11 @@ export class ReboundScene extends Phaser.Scene {
         over: this.over,
       });
     }
+    // Leaving mid-run (Back, or Back to library from the pause screen) tears the game down: keep
+    // the score earned so far. Scene listeners outlive restarts, so replace rather than add.
+    this.events.off(Phaser.Scenes.Events.DESTROY, this.saveOnLeave, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.saveOnLeave, this);
+
     this.scripts = E2E ? (window.__REBOUND_SCRIPT__ ?? null) : null;
     if (this.scripts) {
       this.begin(0);
@@ -296,6 +301,17 @@ export class ReboundScene extends Phaser.Scene {
       case 'land':
         break;
     }
+  }
+
+  /**
+   * A Rebound run lasts minutes, so quitting part-way records the score earned so far (as a
+   * finished run) instead of throwing it away. Coil and Star Raid keep the arcade rule: quitting
+   * forfeits the run.
+   */
+  private saveOnLeave() {
+    if (!this.started || this.over || this.state.score <= 0) return;
+    this.over = true;
+    this.services.onRunComplete({ score: this.state.score });
   }
 
   private endRun(headline?: string) {
