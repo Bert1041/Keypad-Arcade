@@ -19,6 +19,19 @@ declare global {
       y: number;
       over: boolean;
     };
+    /** Skyline: a read-only look at the run. */
+    __SKYLINE_DEBUG__?: () => {
+      started: boolean;
+      over: boolean;
+      phase: 'swinging' | 'falling' | 'waiting' | 'over';
+      floors: number;
+      drops: number;
+      score: number;
+      inHand: number;
+      hookX: number;
+      topX: number;
+      topRest: number;
+    };
   }
 }
 

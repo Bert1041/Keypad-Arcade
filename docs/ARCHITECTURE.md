@@ -224,6 +224,7 @@ Habits:
 | Pads you could jump over, tunnels too low to hop in, ferries ending a tile short, 5-wide pits off walls | Level design | Found by the solver: a level it cannot solve fairly gets redesigned |
 | Offline was only proven for the test prototype | One game's chunk loading offline says nothing about the others | The offline test opens every game; dropping one game's chunk from the cache fails it |
 | Keys pressed on the pause screen started a run behind it | Phaser queues keys while paused and replays them on resume | Pausing turns the game's input off; the test presses keys with focus off the buttons, the only path that reaches the game |
+| Skyline felt buggy: a floor dropped when it looked lined up missed | Floors kept the swing's full speed and drifted ~37 px; the fairness tests proved a landing window existed, not that it was where a player looks | Floors keep 15% of it; a test at every stage and an e2e test that taps on the frame a floor is drawn lined up |
 
 ## 10. Adding a game: checklist
 

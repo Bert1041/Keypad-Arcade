@@ -2,6 +2,7 @@ import type { GameDefinition } from './types';
 import { coil } from './coil';
 import { prototype } from './prototype';
 import { rebound } from './rebound';
+import { skyline } from './skyline';
 import { starRaid } from './star-raid';
 
 /**
@@ -12,6 +13,8 @@ import { starRaid } from './star-raid';
  * to players (a production build drops it entirely).
  */
 export const games: readonly GameDefinition[] = [
+  // First: one tap, nothing to learn — the easiest start for a friend arriving from a link.
+  skyline,
   coil,
   starRaid,
   rebound,
