@@ -1,0 +1,161 @@
+# Keypad Arcade — Delivery Plan
+
+*(working name was RetroBox)*
+
+**Drafted:** 2026-10-25 · **Companion to:** `README_RetroBox_updated.md` (engineering brief) and `RETROBOX_GAME_CATALOGUE.md` (research)
+
+The README stays the source of truth for architecture and engineering rules. This document says
+*what we ship, in what order, how we know it worked*, and records where it deliberately departs from
+the README.
+
+---
+
+## 1. The goal, stated so it can be measured
+
+"Go viral like Lagos Life" means people share it unprompted. Translate that into numbers we can
+actually watch, otherwise every decision becomes taste:
+
+| Signal | Why it matters | First target (soft launch, ~100 players) |
+|---|---|---|
+| **Share rate** — shares ÷ completed runs | The viral engine. Nothing else spreads it. | ≥ 5% |
+| **Invite conversion** — new players ÷ shares | Whether a shared link is worth tapping | ≥ 20% |
+| **D1 / D7 return** | Viral spikes die without retention | ≥ 30% / ≥ 10% |
+| **Runs per session** | Is the loop "one more go"? | ≥ 3 |
+
+These are hypotheses, not promises. A V1 without any way to *measure* them is flying blind — see
+Decision D3.
+
+## 2. Strategy: neutral retro remakes
+
+**Decided 2026-10-25 (D2):** original games on proven feature-phone loops, in a neutral retro
+style — not Naija-themed reskins.
+
+That means local identity is no longer the hook, so spreading depends on:
+
+1. **The share loop (§3)** — now the main viral mechanism, not an extra. D1 matters more.
+2. **The nostalgia challenge** — "you played this in 2006; can you still beat it?" Share cards
+   should lean on that.
+3. **Feel and polish** — remakes compete with every Snake/Breakout clone online; ours must feel
+   better on a budget phone than theirs.
+
+Launch candidates come back to the catalogue's shortlist (`RETROBOX_GAME_CATALOGUE.md` §3):
+physics ball platformer, scrolling space shooter, and tower stacker *or* a Snake variant. Phase 0
+polls rank these with screenshots of the historical references.
+
+Original names, art, sound and levels are still required (README §13) — "neutral" does not mean
+lookalike.
+
+## 3. The viral loop — inside the "no backend" constraint
+
+V1 stays local-first and serverless. That does **not** rule out sharing:
+
+1. **Share card.** On game over, render a score card client-side (canvas → PNG) with a funny
+   context line, and open the native share sheet (Web Share API) — WhatsApp is the channel that
+   matters. Fallback: copy link.
+2. **Challenge links.** `retrobox.app/play/go-slow?seed=8812&beat=4500` — the seed makes the run
+   deterministic, so a friend plays *the same* traffic and tries to beat your number. No server
+   needed.
+3. **Daily seed.** Everyone gets the same run each day (date-derived seed) — a Wordle-style
+   conversation starter, still serverless.
+
+> **This departs from the README**, which excludes "social features" from V1. Approved as D1.
+
+**Status (2026-10-25):** 1 and 2 are built and tested (seeded runs via `GameServices.beginRun`,
+`/play/:id?seed=&beat=` links, PNG score card, share sheet → text → clipboard fallback). 3 (daily
+seed) is not built. Link previews have title/description; the preview **image needs the
+production domain** (absolute `og:image` URL).
+
+**Rule for every game:** all gameplay randomness must come from the function `beginRun()`
+returns. A single `Math.random()` in gameplay silently breaks challenge links — and no automated
+test can see it, so it is a code-review check.
+
+## 4. Audience constraints that shape engineering
+
+- **Low/mid-range Android** is the primary device, not an iPhone. Test on a ~₦80k phone.
+- **Data is expensive and networks drop.** Offline PWA is a *feature*, not a checkbox.
+  - Budget: library screen ≤ 150 KB gzipped on first load; each game chunk loaded lazily.
+  - Phaser 3 is ~340 KB gz — loaded only when a game opens, then cached offline.
+- **Links open in WhatsApp's / social apps' in-app browsers**, where install prompts and storage
+  behave differently. Challenge links must work with zero install.
+
+## 5. Phases
+
+Phase 0 and Phase 1 run **in parallel** — the game host does not depend on which games we pick.
+
+| Phase | Work | Exit condition | Est. |
+|---|---|---|---|
+| **0 — Validate** | WhatsApp/X polls ranking the catalogue shortlist; 10 short chats with people who played Nokia/Java games in Nigeria | 3 concepts chosen with evidence; one-page brief each | 1–2 wk |
+| **1 — Game host** *(built 2026-10-25; real-device check pending)* | Vite/React/TS shell, registry, Phaser lifecycle, local saves, settings, PWA, disposable prototype game, e2e lifecycle test | Enter → play → exit → re-enter ×N with exactly one live game and canvas; best score survives reload | 1 wk |
+| **2 — Flagship + share loop** | First chosen game to brief; share card; challenge links; seeded RNG | Playable on a real budget Android; share → open link → same run works from WhatsApp | 2–3 wk |
+| **2.5 — Soft launch** | Ship to ~100 people via WhatsApp groups | §1 numbers measured for 2 weeks | 2 wk |
+| **3 — Games 2 & 3** | Only if 2.5 shows the loop works; otherwise fix the flagship first | All three playable, independent saves | 3–4 wk |
+| **4 — Polish + public launch** | Icons, offline/update testing on devices, perf pass, launch content | README §10 definition of done | 1–2 wk |
+
+## 6. Engineering standards (non-negotiable)
+
+- `npm run check` = typecheck + unit tests + build. Must pass before anything is called done.
+- **Lifecycle is tested in a real browser**, not by mocks: Playwright counts live Phaser instances
+  and canvases across repeated enter/exit.
+- **Persistence is tested in a real browser**: play, reload, best score still there.
+- Every test is mutation-checked once: break the code it guards, watch it fail, restore.
+- No dependency without a concrete current need (README rule 11).
+- Bundle size checked each build against the §4 budget.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server (React StrictMode on) |
+| `npm run check` | Typecheck → unit tests → production build → bundle budget |
+| `npm run e2e` | Real-browser suite: Pixel 7/Chromium, iPhone 14/WebKit, and a StrictMode dev-server pass |
+| `npm run icons` | Re-render PNG icons from `public/icons/icon.svg` |
+
+The `prototype` game ("Stack Test") is disposable: delete it, and its registry entry, once the first real game exists.
+
+## 7. Decisions needed from you
+
+| # | Decision | Recommendation |
+|---|---|---|
+| **D1** | Allow client-only share cards + challenge links in V1 (README currently excludes social features) | ✅ **Decided: yes** (2026-10-25). Built — see §3 status |
+| **D2** | Naija-themed originals vs. neutral retro remakes | ✅ **Decided: neutral retro remakes** (2026-10-25) |
+| **D3** | Privacy-respecting analytics (e.g. Plausible/Umami: count runs and shares, no personal data) | ✅ **Decided: yes** (2026-10-25). **Open: which provider** — needs your account. Then a privacy note. |
+| **D4** | Product name | ✅ **Decided: Keypad Arcade** (2026-10-25). Domain/trademark **not yet checked**. |
+
+## 8. Scope-change test
+
+Before adding any feature, answer:
+
+1. Which player problem does it solve, or which §1 number does it move?
+2. Is it needed for the current phase's exit condition?
+3. Does it add personal data, a server, an account, or a cost that grows with players?
+4. Can a simpler feature do the same job?
+5. Which planned work does it delay?
+6. What evidence says now rather than later?
+
+If it doesn't serve **play → share → a friend plays → they share**, defer it.
+
+Defer by default: accounts and cloud saves, online leaderboards, multiplayer, currencies or
+loot, ads, a native app, more than three games before the share loop is measured.
+
+## 9. Decision log
+
+Update when a decision changes. Dates are when it was made.
+
+| Decision | Current baseline | Revisit when |
+|---|---|---|
+| Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |
+| Games (2026-10-25) | Neutral retro remakes, original names/art/levels | Phase 0 polls disagree |
+| Sharing (2026-10-25) | Client-only: share card + seeded challenge links, no backend | Leaderboards have evidence |
+| Analytics (2026-10-25) | Yes, privacy-respecting; **provider not chosen** | — |
+| Stack | React 19 + Phaser 3.90 + Vite 8 + TypeScript 6 + Dexie 4 + vite-plugin-pwa | — |
+| Phaser 3, not 4 | Brief specifies 3; 4 is six months old. Dependabot ignores Phaser majors | First real game is stable, or a Phaser 4 feature is needed |
+| TypeScript 6, not 7 | 7 is the new native compiler; typescript-eslint supports < 6.1 | typescript-eslint supports 7 |
+| Package manager | npm (lockfile committed) | — |
+| Game structure | One self-contained folder per game, enforced by guard tests (docs/ARCHITECTURE.md §3) | — |
+| Randomness | Mulberry32, seed chosen by the shell per run; golden values pinned | Never change the generator for existing games |
+| Storage | IndexedDB `keypad-arcade`; no cloud | Validated need for cross-device sync |
+| First-load budget | 150 KB gz JS, enforced in the build | Measured on a budget phone |
+| Browser tests | Production build; Pixel 7 Chromium, iPhone WebKit, desktop Chrome, StrictMode dev; Firefox on CI only | Firefox runs on macOS 27 again |
+| Test retries | None, locally or on CI | — |
+| Updates | Prompt in the library only, never mid-run | — |
+| Practices adopted from Civic Sentinel NG (2026-10-25) | Type-aware ESLint, Prettier, knip, guard tests, page-error fixture, axe, CI with secret scan + audit, Dependabot, docs set, scope test, decision log | — |

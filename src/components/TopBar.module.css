@@ -1,0 +1,21 @@
+.bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+  border-bottom: 2px solid var(--ink-dim);
+}
+.title {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.back {
+  justify-self: start;
+}
+.right {
+  justify-self: end;
+  font-size: 14px;
+}

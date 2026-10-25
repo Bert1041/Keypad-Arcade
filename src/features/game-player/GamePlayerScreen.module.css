@@ -1,0 +1,40 @@
+.screen {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.canvasHost {
+  position: absolute;
+  inset: 0;
+  /* Stop the browser treating taps as scroll / double-tap zoom. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.error {
+  position: absolute;
+  inset: auto 16px 16px;
+  padding: 12px;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+}
+.runBar {
+  flex: none;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px calc(env(safe-area-inset-bottom) + 8px);
+  border-top: 2px solid var(--ink-dim);
+}
+.runStatus {
+  flex: 1;
+  font-size: 15px;
+}

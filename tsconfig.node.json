@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node", "vite/client"],
+    "tsBuildInfoFile": "node_modules/.tmp/node.tsbuildinfo",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "e2e",
+    "scripts",
+    "*.config.ts",
+    "src/**/*.test.ts",
+    "src/types/e2e-globals.d.ts",
+    "src/appInfo.ts"
+  ]
+}

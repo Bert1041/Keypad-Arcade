@@ -1,0 +1,3 @@
+@README.md
+@PLAN.md
+@docs/ARCHITECTURE.md
