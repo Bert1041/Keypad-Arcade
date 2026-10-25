@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { GameServices, RandomFn } from '@/games/types';
+import { showGameOver } from '@/games/shared/gameOver';
 import { isForShellControl } from '@/games/shared/input';
+import { BODY_FONT, INK, PIXEL_FONT } from '@/games/shared/style';
 import {
   createCoil,
   queueTurn,
@@ -33,9 +35,6 @@ const COLOR = {
   food: 0xffd23f,
   bonus: 0xff7aa8,
 };
-const PIXEL_FONT = '"Press Start 2P", monospace';
-const TEXT = '#eef0f8';
-const MUTED = '#a3a9c2';
 
 const KEY_TO_DIR: Record<string, Dir> = {
   ArrowUp: 'up',
@@ -80,14 +79,14 @@ export class CoilScene extends Phaser.Scene {
     this.scoreText = this.add.text(12, 16, '0', {
       fontFamily: PIXEL_FONT,
       fontSize: '16px',
-      color: TEXT,
+      color: INK.text,
     });
     // The best score lives in the shell's top bar; a copy here would go stale mid-session.
     this.hint = this.add
       .text(WORLD_WIDTH / 2, BOARD_Y + CELL * 16, 'Swipe or press an\narrow key to start', {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: BODY_FONT,
         fontSize: '16px',
-        color: MUTED,
+        color: INK.muted,
         align: 'center',
       })
       .setOrigin(0.5);
@@ -248,24 +247,9 @@ export class CoilScene extends Phaser.Scene {
     const isBest = this.state.score > this.best;
     this.best = Math.max(this.best, this.state.score);
     this.cameras.main.shake(180, 0.006);
-    const lines = [
-      'GAME OVER',
-      '',
-      `${this.state.score}`,
-      isBest ? 'NEW BEST!' : '',
-      '',
-      'Tap to retry',
-    ];
-    this.add
-      .text(WORLD_WIDTH / 2, BOARD_Y + (ROWS * CELL) / 2, lines.join('\n'), {
-        fontFamily: PIXEL_FONT,
-        fontSize: '16px',
-        lineSpacing: 6,
-        color: TEXT,
-        align: 'center',
-        backgroundColor: '#0d0e14e6',
-        padding: { x: 20, y: 18 },
-      })
-      .setOrigin(0.5);
+    showGameOver(this, WORLD_WIDTH / 2, BOARD_Y + (ROWS * CELL) / 2, {
+      score: this.state.score,
+      isBest,
+    });
   }
 }

@@ -1,6 +1,7 @@
 import type { GameDefinition } from './types';
 import { coil } from './coil';
 import { prototype } from './prototype';
+import { starRaid } from './star-raid';
 
 /**
  * Every playable game, in library order. Import only a game's index.ts here — never its
@@ -11,6 +12,7 @@ import { prototype } from './prototype';
  */
 export const games: readonly GameDefinition[] = [
   coil,
+  starRaid,
   ...(import.meta.env.DEV || import.meta.env.VITE_E2E === '1' ? [prototype] : []),
 ];
 

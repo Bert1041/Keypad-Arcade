@@ -4,7 +4,7 @@ Original pocket games inspired by the phones we grew up with — an installable,
 (PWA). Finish a run, send a friend the exact same run on WhatsApp, and dare them to beat you.
 
 **Status:** Game host, saving, offline and the challenge/share loop are built and tested. Launch
-lineup: **Coil** (snake, built), **Star Raid** (shooter, next), **Rebound** (ball platformer).
+lineup: **Coil** (snake, built), **Star Raid** (shooter, built), **Rebound** (ball platformer, next).
 Not deployed.
 
 ## Documentation

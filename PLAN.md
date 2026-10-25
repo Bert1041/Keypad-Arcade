@@ -93,7 +93,7 @@ Phase 0 and Phase 1 run **in parallel** — the game host does not depend on whi
 | **0 — Validate** | WhatsApp/X polls ranking the catalogue shortlist; 10 short chats with people who played Nokia/Java games in Nigeria | 3 concepts chosen with evidence; one-page brief each | 1–2 wk |
 | **1 — Game host** *(built 2026-10-25; real-device check pending)* | Vite/React/TS shell, registry, Phaser lifecycle, local saves, settings, PWA, disposable prototype game, e2e lifecycle test | Enter → play → exit → re-enter ×N with exactly one live game and canvas; best score survives reload | 1 wk |
 | **2 — Share loop + new look** *(share loop built 2026-10-25)* | Share card, challenge links, seeded RNG; modern theme with pixel accents | Share → open link → same run works from WhatsApp on a real phone | 1–2 wk |
-| **3 — The three launch games** *(Coil built 2026-10-25)* | Coil → Star Raid → Rebound, each to its brief, each in its own folder | All three playable on a budget Android, independent saves, challenge links replay each | 4–6 wk |
+| **3 — The three launch games** *(Coil and Star Raid built 2026-10-25)* | Coil → Star Raid → Rebound, each to its brief, each in its own folder | All three playable on a budget Android, independent saves, challenge links replay each | 4–6 wk |
 | **3.5 — Soft launch** | Ship to ~100 people via WhatsApp groups | §1 numbers measured for 2 weeks | 2 wk |
 | **4 — Polish + public launch** | Fix what 3.5 showed; icons, offline/update testing on devices, perf pass, launch content | README §10 definition of done | 1–2 wk |
 
@@ -140,6 +140,7 @@ Update when a decision changes. Dates are when it was made.
 |---|---|---|
 | Theme (2026-10-25) | Modern dark app with pixel-art accents (pixel font for titles, pixel game icons); replaces the green LCD look | Player feedback |
 | Launch lineup (2026-10-25) | Coil (snake), Star Raid (shooter), Rebound (ball platformer), all before launch | Soft-launch data |
+| Star Raid orientation (2026-10-25) | Vertical scrolling in portrait (Space Impact scrolled sideways) — the app is held upright | Players ask for landscape |
 | Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |
 | Games (2026-10-25) | Neutral retro remakes, original names/art/levels | Phase 0 polls disagree |
 | Sharing (2026-10-25) | Client-only: share card + seeded challenge links, no backend | Leaderboards have evidence |

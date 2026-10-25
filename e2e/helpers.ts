@@ -2,7 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, press } from './fixtures';
 
 /** Games in an e2e build, in library order (the prototype is test-only). */
-export const GAME_IDS = ['coil', 'prototype'] as const;
+export const GAME_IDS = ['coil', 'star-raid', 'prototype'] as const;
 import { DB_NAME } from '../src/appInfo';
 
 export const liveGames = (page: Page) =>

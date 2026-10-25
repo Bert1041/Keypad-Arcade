@@ -49,7 +49,8 @@ src/
   games/
     types.ts              The game ↔ shell contract (GameServices, GameDefinition)
     registry.ts           The list of games, in library order
-    shared/               Helpers for game code only (lifecycle counter, input filter)
+    shared/               Helpers for game code only: lifecycle counter, input filter, game-over
+                          panel, pixel-art textures, the games' shared style
     <game-id>/            One folder per game — see §3
   architecture.test.ts    Guard tests for the rules in §3 and §1
   styles/global.css       Colour tokens and base styles
@@ -94,6 +95,9 @@ player's database, harmlessly.
 **`prototype` (Stack Test) is a test fixture**, not a game: the registry includes it only in
 development and `VITE_E2E=1` builds, and a production build contains no trace of it. The shared
 host tests (lifecycle, persistence, sharing) drive it because its first tap always scores.
+
+**`star-raid`** shows the pattern for real-time games: a fixed 60 Hz simulation in `logic/`,
+waves generated on the clock (never from player actions), and e2e fixtures found by simulation.
 
 **`coil`** is the reference implementation of a real game: rules in `logic/`, a thin scene, and an
 e2e test that predicts the score from the seed with the game's own rules module and checks the
@@ -181,6 +185,10 @@ Habits:
 | A mutation "passed" for the wrong reason | Removing a call left an unused import; the build failed, not the test | Read every failure; keep mutations compiling |
 | Golden RNG values were wrong | Written from memory | Generated from the reference implementation |
 | Firefox will not start locally | Firefox 157 on macOS 27 ("Could not find profile folder"), even by hand | Firefox runs on CI; locally `E2E_FIREFOX=1` |
+| CI-only Firefox failure: "Navigated away from page" on reload | `void ctx.resume()` left the audio-resume promise unhandled; Firefox rejects pending ones on navigation | One resume at a time, rejection handled; the fixture now reports each error's source location |
+| A test that could not fail ("can't shoot off-screen enemies") | Its bullet left the screen and was discarded before the collision check | Positions chosen so only the rule prevents the hit, plus an on-screen control case |
+| "Waits for the first tap" passed when the game started at once | An idle run scores the same whenever it starts | Assert the tap-to-game-over time is at least the simulated run length |
+| A sprite looked like a famous arcade alien | Drawn from memory of the genre | Redrawn; review every sprite against the originals it was inspired by |
 
 ## 10. Adding a game: checklist
 
