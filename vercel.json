@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/((?!assets/|icons/|sw\\.js|workbox-).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|icons/|sw\\.js|workbox-).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
