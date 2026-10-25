@@ -126,6 +126,12 @@ features by coordinate) rather than typed by hand, and checked by `parseLevel()`
 | `bestScore` | Best at launch, for "new best!" (track later runs yourself) |
 | `progress` | For games with levels: `reachedLevel` at launch, and `reachLevel(n)` to save a new one |
 
+In return a game's `createGame` hands back a `GameInstance` — `destroy`, `pause`, `resume` — by
+returning `trackPhaserGame(new Phaser.Game(...))`, so all games behave the same. The shell pauses
+on its pause button, on P, and whenever the app is hidden (a call, switching apps); only the player
+resumes it. Pausing also switches the game's input off: Phaser queues keys while paused and
+replays them on resume.
+
 The host creates the game in an effect, never during render, and destroys it on unmount. Loading
 is async, so a cleanup that runs before the module arrives (React StrictMode does this on every
 mount in development) cancels the creation. Tested in the `dev-strictmode` e2e project.
@@ -216,6 +222,8 @@ Habits:
 | Jumping off a moving platform stopped dead in the air | No momentum transfer | Platform speed carries into the jump (tested, mutation-checked) |
 | Every underwater ring was a tiny air pocket | A pickup replaces the `~` in the map | A water mask decides; each of its rules has a case only it covers |
 | Pads you could jump over, tunnels too low to hop in, ferries ending a tile short, 5-wide pits off walls | Level design | Found by the solver: a level it cannot solve fairly gets redesigned |
+| Offline was only proven for the test prototype | One game's chunk loading offline says nothing about the others | The offline test opens every game; dropping one game's chunk from the cache fails it |
+| Keys pressed on the pause screen started a run behind it | Phaser queues keys while paused and replays them on resume | Pausing turns the game's input off; the test presses keys with focus off the buttons, the only path that reaches the game |
 
 ## 10. Adding a game: checklist
 

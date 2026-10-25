@@ -51,6 +51,9 @@ export interface GameServices {
 export interface GameInstance {
   /** Must stop the loop, remove the canvas and release every listener. */
   destroy(): void;
+  /** Freeze the game — simulation, timers and input — until resume(). */
+  pause(): void;
+  resume(): void;
 }
 
 export type CreateGame = (parent: HTMLElement, services: GameServices) => GameInstance;

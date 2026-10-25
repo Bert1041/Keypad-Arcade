@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { GameDefinition, GameInstance, GameServices } from '@/games/types';
 import styles from './GamePlayerScreen.module.css';
 
 interface Props {
   game: GameDefinition;
   services: GameServices;
+  /** Freezes the game while true (and resumes it when false). */
+  paused: boolean;
+  /** Drawn over the game, e.g. the pause screen. */
+  overlay?: ReactNode;
 }
 
 /**
@@ -14,10 +18,18 @@ interface Props {
  * Loading is async, so a cleanup that runs before the module arrives — React StrictMode
  * does this on every mount — must stop the late arrival from creating a game at all.
  */
-export function GameHost({ game, services }: Props) {
+export function GameHost({ game, services, paused, overlay }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef(services);
+  const instanceRef = useRef<GameInstance | null>(null);
+  const pausedRef = useRef(paused);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (paused) instanceRef.current?.pause();
+    else instanceRef.current?.resume();
+  }, [paused]);
 
   useEffect(() => {
     servicesRef.current = services;
@@ -51,6 +63,9 @@ export function GameHost({ game, services }: Props) {
         // Don't let a focused shell button keep receiving key presses meant for the game.
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
         instance = create(parent, stable);
+        instanceRef.current = instance;
+        // Paused before it finished loading (e.g. the app went to the background): stay paused.
+        if (pausedRef.current) instance.pause();
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -59,12 +74,14 @@ export function GameHost({ game, services }: Props) {
     return () => {
       cancelled = true;
       instance?.destroy();
+      instanceRef.current = null;
     };
   }, [game]);
 
   return (
     <div className={styles.stage}>
       <div ref={containerRef} className={styles.canvasHost} data-testid="game-container" />
+      {overlay}
       {failed && (
         <p className={styles.error} role="alert">
           This game couldn't load. If you're offline, open it once with a connection so it can be

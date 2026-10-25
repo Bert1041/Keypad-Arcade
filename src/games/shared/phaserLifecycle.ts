@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { GameInstance } from '@/games/types';
 
 /**
  * Counts Phaser games that have been created but not yet fully destroyed. End-to-end
@@ -13,11 +14,33 @@ if (import.meta.env.VITE_E2E === '1' && typeof window !== 'undefined') {
     // A game exists before it boots; taps sent before a scene is active are silently lost.
     playableGames: () =>
       [...live].filter((g) => g.isRunning && g.scene.getScenes(true).length > 0).length,
+    pausedGames: () => [...live].filter((g) => g.isPaused).length,
   };
 }
 
-export function trackPhaserGame(game: Phaser.Game): Phaser.Game {
+/** Phaser hands key and pointer events to scenes as they arrive, even while paused. */
+function setInput(game: Phaser.Game, enabled: boolean) {
+  game.input.enabled = enabled;
+  if (game.input.keyboard) game.input.keyboard.enabled = enabled;
+}
+
+/**
+ * Registers a Phaser game with the host and gives the shell its controls. Every game's
+ * createGame returns this, so destroy, pause and resume behave the same in every game.
+ */
+export function trackPhaserGame(game: Phaser.Game): GameInstance {
   live.add(game);
   game.events.once(Phaser.Core.Events.DESTROY, () => live.delete(game));
-  return game;
+  return {
+    destroy: () => game.destroy(true),
+    pause: () => {
+      game.pause();
+      // Without this, Space on the pause screen could start or change a run behind it.
+      setInput(game, false);
+    },
+    resume: () => {
+      setInput(game, true);
+      game.resume();
+    },
+  };
 }

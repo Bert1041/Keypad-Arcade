@@ -1,5 +1,5 @@
 import { expect, test, press } from './fixtures';
-import { expectOneRunningGame } from './helpers';
+import { GAME_IDS, expectNoGames, expectOneRunningGame } from './helpers';
 
 // Playwright only supports service workers in Chromium, which is our primary target anyway.
 test.skip(
@@ -7,7 +7,7 @@ test.skip(
   'service workers need Chromium in Playwright',
 );
 
-test('after one online visit, the library and a lazily-loaded game work offline', async ({
+test('after one online visit, the library and every game work offline', async ({
   page,
   context,
 }) => {
@@ -21,8 +21,13 @@ test('after one online visit, the library and a lazily-loaded game work offline'
 
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByTestId('game-card-prototype')).toBeVisible();
-  // The game chunk (with Phaser) was never requested online — it must come from the precache.
-  await press(page.getByTestId('game-card-prototype'));
-  await expectOneRunningGame(page);
+  // Every game has its own lazily-loaded chunk that was never requested online, so each one is
+  // checked: one game working offline proves nothing about the others' files.
+  for (const id of GAME_IDS) {
+    await expect(page.getByTestId(`game-card-${id}`)).toBeVisible();
+    await press(page.getByTestId(`game-card-${id}`));
+    await expectOneRunningGame(page);
+    await press(page.getByRole('button', { name: 'Back to library' }));
+    await expectNoGames(page);
+  }
 });

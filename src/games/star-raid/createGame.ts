@@ -5,7 +5,7 @@ import { INK } from '@/games/shared/style';
 import { RaidScene, WORLD_HEIGHT, WORLD_WIDTH } from './scenes/RaidScene';
 
 export const createGame: CreateGame = (parent, services) => {
-  const game = trackPhaserGame(
+  return trackPhaserGame(
     new Phaser.Game({
       type: Phaser.AUTO,
       parent,
@@ -19,5 +19,4 @@ export const createGame: CreateGame = (parent, services) => {
       scene: [new RaidScene(services)],
     }),
   );
-  return { destroy: () => game.destroy(true) };
 };

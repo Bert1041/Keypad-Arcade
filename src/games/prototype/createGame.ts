@@ -4,7 +4,7 @@ import { trackPhaserGame } from '@/games/shared/phaserLifecycle';
 import { StackScene, WORLD_HEIGHT, WORLD_WIDTH } from './scenes/StackScene';
 
 export const createGame: CreateGame = (parent, services) => {
-  const game = trackPhaserGame(
+  return trackPhaserGame(
     new Phaser.Game({
       type: Phaser.AUTO,
       parent,
@@ -18,5 +18,4 @@ export const createGame: CreateGame = (parent, services) => {
       scene: [new StackScene(services)],
     }),
   );
-  return { destroy: () => game.destroy(true) };
 };

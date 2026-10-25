@@ -9,6 +9,7 @@ import { createRunSeeds } from '@/core/random/runSeeds';
 import { TopBar } from '@/components/TopBar';
 import { useLeave } from '@/app/useLeave';
 import { GameHost } from './GameHost';
+import { PauseScreen } from './PauseScreen';
 import { RunBar, type FinishedRun } from './RunBar';
 import styles from './GamePlayerScreen.module.css';
 
@@ -37,6 +38,25 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
   const [bestScore, setBestScore] = useState<number | undefined>(undefined);
   const [lastRun, setLastRun] = useState<FinishedRun | null>(null);
   const seeds = useMemo(() => createRunSeeds(challenge?.seed ?? null), [challenge]);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    // A call, a notification, switching apps: pause, and wait for the player to come back
+    // and choose to resume — a run never carries on by surprise.
+    const onVisibility = () => {
+      if (document.hidden) setPaused(true);
+    };
+    // P on a keyboard. (Esc, handled by each game, leaves.)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code === 'KeyP' && !event.repeat) setPaused((p) => !p);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,9 +115,37 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
       <TopBar
         onBack={leave}
         title={game.title}
-        right={<span data-testid="player-best">Best: {bestScore ?? '…'}</span>}
+        right={
+          <span className={styles.topRight}>
+            <span data-testid="player-best">Best: {bestScore ?? '…'}</span>
+            <button
+              type="button"
+              className={styles.pauseButton}
+              onClick={() => setPaused(true)}
+              aria-label="Pause"
+              disabled={paused}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 8 8"
+                aria-hidden="true"
+                shapeRendering="crispEdges"
+              >
+                <path d="M1 1h2v6H1zM5 1h2v6H5z" fill="currentColor" />
+              </svg>
+            </button>
+          </span>
+        }
       />
-      {services && <GameHost game={game} services={services} />}
+      {services && (
+        <GameHost
+          game={game}
+          services={services}
+          paused={paused}
+          overlay={paused && <PauseScreen onResume={() => setPaused(false)} onQuit={leave} />}
+        />
+      )}
       <RunBar game={game} challenge={challenge} lastRun={lastRun} />
     </main>
   );

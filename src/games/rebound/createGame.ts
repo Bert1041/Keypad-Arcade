@@ -5,7 +5,7 @@ import { INK } from '@/games/shared/style';
 import { ReboundScene, WORLD_HEIGHT, WORLD_WIDTH } from './scenes/ReboundScene';
 
 export const createGame: CreateGame = (parent, services) => {
-  const game = trackPhaserGame(
+  return trackPhaserGame(
     new Phaser.Game({
       type: Phaser.AUTO,
       parent,
@@ -18,5 +18,4 @@ export const createGame: CreateGame = (parent, services) => {
       scene: [new ReboundScene(services)],
     }),
   );
-  return { destroy: () => game.destroy(true) };
 };

@@ -3,7 +3,7 @@
 
 declare global {
   interface Window {
-    __GAME_HOST_E2E__?: { liveGames(): number; playableGames(): number };
+    __GAME_HOST_E2E__?: { liveGames(): number; playableGames(): number; pausedGames(): number };
     /**
      * Rebound: scripted input per level (index 0 = level 1), played deterministically. The
      * shape of Rebound's ScriptStep, written out because shell code may not import from inside

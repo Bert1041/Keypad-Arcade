@@ -5,7 +5,7 @@ import { INK } from '@/games/shared/style';
 import { CoilScene, WORLD_HEIGHT, WORLD_WIDTH } from './scenes/CoilScene';
 
 export const createGame: CreateGame = (parent, services) => {
-  const game = trackPhaserGame(
+  return trackPhaserGame(
     new Phaser.Game({
       type: Phaser.AUTO,
       parent,
@@ -19,5 +19,4 @@ export const createGame: CreateGame = (parent, services) => {
       scene: [new CoilScene(services)],
     }),
   );
-  return { destroy: () => game.destroy(true) };
 };
