@@ -18,6 +18,10 @@ updates:
       # Phaser 4 is a rewrite with API changes; moving to it is a deliberate decision (PLAN.md).
       - dependency-name: 'phaser'
         update-types: ['version-update:semver-major']
+      # typescript-eslint supports TypeScript < 6.1 only; npm ci rejects TypeScript 7 (PR #1).
+      # Bump both together once typescript-eslint supports 7 (PLAN.md decision log).
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
