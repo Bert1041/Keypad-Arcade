@@ -14,6 +14,18 @@ function isDate(value) {
 	const parsed = /* @__PURE__ */ new Date(`${value}T00:00:00Z`);
 	return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
+/** A run finished just after midnight UTC may still be posted to the day it was played on. */
+var POST_GRACE_MS = 9e5;
+/**
+* The dailies a run finished at `now` may be posted to a leaderboard: today's, and for
+* POST_GRACE_MS after midnight, yesterday's. The server enforces it; the app uses it to offer
+* "Post" only when the post can succeed (a friend's daily link from yesterday cannot).
+*/
+function postableDates(now) {
+	const today = utcDate(new Date(now));
+	const earlier = utcDate(/* @__PURE__ */ new Date(now - POST_GRACE_MS));
+	return [.../* @__PURE__ */ new Set([today, earlier])].filter(hasDaily);
+}
 /**
 * The day's seed for a game: FNV-1a (32-bit) of "gameId:date". Pinned by golden-value tests —
 * changing it would change every daily already played and shared.
@@ -969,8 +981,6 @@ var BOARD_GAMES = {
 	coil: replayRun$2,
 	"star-raid": replayRun
 };
-/** A run finished just after midnight UTC still counts for the day it was played on. */
-var GRACE_MS = 9e5;
 var KEEP_DAYS = 8;
 /**
 * Sorted-set scores carry the score and, below it, how early in the day it was set, so equal
@@ -993,12 +1003,6 @@ function playerId(secret) {
 	return createHash("sha256").update(secret).digest("hex").slice(0, 16);
 }
 var isSecret = (value) => typeof value === "string" && /^[0-9a-f]{32,64}$/.test(value);
-/** The dailies a run finished at `now` may be posted to: today's, and just after midnight, yesterday's. */
-function postableDates(now) {
-	const today = utcDate(new Date(now));
-	const earlier = utcDate(/* @__PURE__ */ new Date(now - GRACE_MS));
-	return [.../* @__PURE__ */ new Set([today, earlier])].filter(hasDaily);
-}
 async function postRun(redis, body, { now, ip }) {
 	if (typeof body !== "object" || body === null) return fail(400, "Expected a JSON object");
 	const { game, date, player, nickname, score, replay } = body;

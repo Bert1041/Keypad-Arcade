@@ -115,6 +115,20 @@ test('the next daily run posts without asking for the name again', async ({ page
   await expect(page.getByTestId('run-status')).toContainText('is #1 of 1'); // the better run stands
 });
 
+test('a friend’s daily link from an earlier day plays, but offers no Post', async ({ page }) => {
+  const yesterday = new Date(NOW - 86_400_000).toISOString().slice(0, 10);
+  await page.goto(`/play/skyline?daily=${yesterday}`);
+  await expectOneRunningGame(page);
+  await tap(page);
+  for (let miss = 1; miss <= 3; miss++) {
+    await nextFloorSwings(page);
+    await tap(page);
+    await expect.poll(async () => (await debug(page))?.inHand).toBe(3 - miss);
+  }
+  await expect(page.getByTestId('share-button')).toBeVisible();
+  await expect(page.getByTestId('post-button')).toHaveCount(0);
+});
+
 test('only daily runs can be posted', async ({ page }) => {
   await page.goto('/play/skyline');
   await expectOneRunningGame(page);

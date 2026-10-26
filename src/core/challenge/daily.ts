@@ -25,6 +25,20 @@ export function isDate(value: string): boolean {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+/** A run finished just after midnight UTC may still be posted to the day it was played on. */
+export const POST_GRACE_MS = 15 * 60 * 1000;
+
+/**
+ * The dailies a run finished at `now` may be posted to a leaderboard: today's, and for
+ * POST_GRACE_MS after midnight, yesterday's. The server enforces it; the app uses it to offer
+ * "Post" only when the post can succeed (a friend's daily link from yesterday cannot).
+ */
+export function postableDates(now: number): string[] {
+  const today = utcDate(new Date(now));
+  const earlier = utcDate(new Date(now - POST_GRACE_MS));
+  return [...new Set([today, earlier])].filter(hasDaily);
+}
+
 /** Days since the epoch, counting from 1. */
 export function dailyNumber(date: string): number {
   const days = (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${DAILY_EPOCH}T00:00:00Z`)) / DAY_MS;

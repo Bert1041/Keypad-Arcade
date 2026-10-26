@@ -66,18 +66,27 @@ export async function playOneRun(page: Page): Promise<number> {
 interface Captured {
   text: string;
   files: { type: string; size: number }[];
+  /** Whether the share call started inside the tap that asked for it. */
+  duringTap: boolean;
 }
 
 /** The OS share sheet can't open headless, so record what the app hands to it. */
 export async function captureShares(page: Page) {
   await page.addInitScript(() => {
-    const w = window as unknown as { __shares: unknown[] };
+    const w = window as unknown as { __shares: unknown[]; __inTap: boolean };
     w.__shares = [];
+    w.__inTap = false;
+    // Browsers only open a share sheet from inside a tap (Safari strictly), so note whether
+    // each share started while the tap's click was still being handled: the first listener
+    // to see the click sets the flag, the last one (on window, after the app's) clears it.
+    document.addEventListener('click', () => (w.__inTap = true), true);
+    window.addEventListener('click', () => (w.__inTap = false));
     Navigator.prototype.canShare = () => true;
     Navigator.prototype.share = async (data?: ShareData) => {
       w.__shares.push({
         text: data?.text,
         files: (data?.files ?? []).map((f) => ({ type: f.type, size: f.size })),
+        duringTap: w.__inTap,
       });
     };
   });

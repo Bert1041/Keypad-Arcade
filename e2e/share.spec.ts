@@ -29,6 +29,8 @@ test('a shared run becomes a challenge that replays the same seed, and passes it
   await press(page.getByTestId('share-button'));
   await expect.poll(async () => (await shares(page)).length).toBe(1);
   const [sent] = await shares(page);
+  // Inside the tap, with the card already drawn: Safari refuses a share sheet opened later.
+  expect(sent!.duringTap).toBe(true);
   expect(sent!.files).toHaveLength(1);
   expect(sent!.files[0]!.type).toBe('image/png');
   expect(sent!.files[0]!.size).toBeGreaterThan(5_000); // a real rendered card, not an empty canvas
@@ -84,4 +86,24 @@ test.describe('without a share sheet', () => {
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(linkIn(copied).searchParams.get('beat')).toBe(String(score));
   });
+});
+
+test('with no share sheet and no clipboard (in-app browsers), the message is shown to copy by hand', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    delete (Navigator.prototype as Partial<Navigator>).share;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => Promise.reject(new DOMException('denied', 'NotAllowedError')) },
+    });
+  });
+  await page.goto('/play/prototype');
+  const score = await playOneRun(page);
+  await press(page.getByTestId('share-button'));
+  const box = page.getByTestId('manual-share');
+  await expect(box).toBeVisible();
+  const message = await box.inputValue();
+  expect(message).toContain(`I scored ${score}`);
+  expect(linkIn(message).searchParams.get('beat')).toBe(String(score));
+  await expect(box).toHaveAttribute('readonly', '');
 });

@@ -5,7 +5,7 @@ import type { GameDefinition, GameServices, RunResult } from '@/games/types';
 import { getStats, recordLevelReached, recordRun, type GameStats } from '@/core/scores/scores';
 import { createSfx } from '@/core/audio/sfx';
 import { parseChallenge, type Challenge } from '@/core/challenge/challenge';
-import { utcDate } from '@/core/challenge/daily';
+import { postableDates, utcDate } from '@/core/challenge/daily';
 import { createRunSeeds } from '@/core/random/runSeeds';
 import { TopBar } from '@/components/TopBar';
 import { useLeave } from '@/app/useLeave';
@@ -86,6 +86,7 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
         seed: seeds.current(),
         replay: result.replay,
         id: (previous?.id ?? 0) + 1,
+        postable: !!challenge?.daily && postableDates(Date.now()).includes(challenge.daily.date),
       }));
       if (import.meta.env.VITE_E2E === '1') {
         window.__LAST_RUN__ = { gameId: game.id, seed: seeds.current(), ...result };
@@ -97,7 +98,7 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
           setBestScore((b) => Math.max(b ?? 0, result.score));
         });
     },
-    [game, seeds],
+    [game, seeds, challenge],
   );
 
   const reachLevel = useCallback(

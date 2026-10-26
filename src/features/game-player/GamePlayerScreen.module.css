@@ -37,6 +37,17 @@
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
+.manualShare {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-small);
+}
 .runStatus {
   flex: 1;
   min-width: 0;

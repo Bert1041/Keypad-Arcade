@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Redis } from '@upstash/redis';
-import { dailySeed, hasDaily, isDate, utcDate } from '../src/core/challenge/daily';
+import { dailySeed, isDate, postableDates } from '../src/core/challenge/daily';
 import { seededRandom } from '../src/core/random/seededRandom';
 import { replayRun as replayCoil } from '../src/games/coil/verify';
 import { replayRun as replaySkyline } from '../src/games/skyline/verify';
@@ -22,8 +22,6 @@ export const BOARD_GAMES: Readonly<Record<string, ReplayRun>> = {
 };
 
 export const TOP = 50;
-/** A run finished just after midnight UTC still counts for the day it was played on. */
-export const GRACE_MS = 15 * 60 * 1000;
 /** Posts per minute from one network address, and per player per day. */
 export const IP_PER_MINUTE = 20;
 export const PLAYER_PER_DAY = 300;
@@ -61,13 +59,6 @@ export function playerId(secret: string): string {
 
 const isSecret = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{32,64}$/.test(value);
-
-/** The dailies a run finished at `now` may be posted to: today's, and just after midnight, yesterday's. */
-export function postableDates(now: number): string[] {
-  const today = utcDate(new Date(now));
-  const earlier = utcDate(new Date(now - GRACE_MS));
-  return [...new Set([today, earlier])].filter(hasDaily);
-}
 
 export interface Posted {
   score: number;

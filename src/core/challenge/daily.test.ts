@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DAILY_EPOCH, dailyNumber, dailySeed, hasDaily, isDate, utcDate } from './daily';
+import {
+  DAILY_EPOCH,
+  dailyNumber,
+  dailySeed,
+  hasDaily,
+  isDate,
+  postableDates,
+  utcDate,
+} from './daily';
 
 describe('daily', () => {
   it('uses the UTC date, not the phone’s local one', () => {
@@ -41,5 +49,20 @@ describe('daily', () => {
     ['coil', '2026-10-27', 3562550804],
   ])('the %s daily for %s is seed %i', (game, date, seed) => {
     expect(dailySeed(game, date)).toBe(seed);
+  });
+});
+
+describe('which dailies can be posted', () => {
+  const at = (iso: string) => Date.parse(iso);
+
+  it('is today’s, and yesterday’s too for 15 minutes after midnight UTC', () => {
+    expect(postableDates(at('2026-11-03T12:00:00Z'))).toEqual(['2026-11-03']);
+    expect(postableDates(at('2026-11-04T00:14:59Z'))).toEqual(['2026-11-04', '2026-11-03']);
+    expect(postableDates(at('2026-11-04T00:15:00Z'))).toEqual(['2026-11-04']);
+  });
+
+  it('is nothing before Daily #1', () => {
+    expect(postableDates(at(`${DAILY_EPOCH}T00:05:00Z`))).toEqual([DAILY_EPOCH]);
+    expect(postableDates(at('2026-10-01T12:00:00Z'))).toEqual([]);
   });
 });
