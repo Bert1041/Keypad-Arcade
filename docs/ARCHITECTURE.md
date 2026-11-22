@@ -276,6 +276,8 @@ Habits:
 1. Passes the scope test in PLAN.md; has a one-page brief.
 2. Create `src/games/<id>/` with `index.ts`, `createGame.ts`, `README.md`; add the id to `GameId`
    in `types.ts` and the definition to `registry.ts`. Guard tests tell you what is missing.
+   The definition's `howToPlay` (goal, controls, rules) is required: it is the game's "How to
+   play" screen, so write it for players — short lines, touch first, keys after.
 3. Put rules in `logic/` with unit tests; scenes stay thin.
 4. Randomness only from `beginRun()`; report every finished run; Esc exits; respect
    `isForShellControl`; call `trackPhaserGame()` on the game you create.

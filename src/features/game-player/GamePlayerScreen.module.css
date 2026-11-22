@@ -100,3 +100,50 @@
   font-family: var(--font-pixel);
   font-size: 12px;
 }
+.howTo {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--bg) 97%, transparent);
+}
+.howToBody {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 20px 16px 28px;
+  display: flex;
+  flex-direction: column;
+}
+.howToGoal {
+  margin: 0 0 4px;
+  font-size: 17px;
+  line-height: 1.45;
+}
+.howToHeading {
+  margin: 16px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.howToList {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.howToBody button {
+  margin-top: 24px;
+  align-self: center;
+  min-width: 200px;
+}
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0;
+}

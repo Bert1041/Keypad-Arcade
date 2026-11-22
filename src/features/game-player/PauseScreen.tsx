@@ -3,11 +3,12 @@ import styles from './GamePlayerScreen.module.css';
 
 interface Props {
   onResume: () => void;
+  onHowToPlay: () => void;
   onQuit: () => void;
 }
 
 /** Drawn over a frozen game. Resume takes the focus, so Enter or Space continues. */
-export function PauseScreen({ onResume, onQuit }: Props) {
+export function PauseScreen({ onResume, onHowToPlay, onQuit }: Props) {
   const resume = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     resume.current?.focus();
@@ -20,6 +21,9 @@ export function PauseScreen({ onResume, onQuit }: Props) {
       </h2>
       <button ref={resume} type="button" className="button-primary" onClick={onResume}>
         Resume
+      </button>
+      <button type="button" onClick={onHowToPlay}>
+        How to play
       </button>
       <button type="button" onClick={onQuit}>
         Back to library

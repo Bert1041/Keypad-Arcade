@@ -10,11 +10,14 @@ import { createRunSeeds } from '@/core/random/runSeeds';
 import { TopBar } from '@/components/TopBar';
 import { useLeave } from '@/app/useLeave';
 import { GameHost } from './GameHost';
+import { HowToPlayScreen } from './HowToPlayScreen';
 import { PauseScreen } from './PauseScreen';
 import { RunBar, type FinishedRun } from './RunBar';
 import styles from './GamePlayerScreen.module.css';
 
 const sfx = createSfx();
+
+type Overlay = { kind: 'pause' } | { kind: 'help'; back: 'game' | 'pause' } | null;
 
 export function GamePlayerScreen() {
   const { gameId } = useParams();
@@ -43,17 +46,21 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
   const [bestScore, setBestScore] = useState<number | undefined>(undefined);
   const [lastRun, setLastRun] = useState<FinishedRun | null>(null);
   const seeds = useMemo(() => createRunSeeds(challenge?.seed ?? null), [challenge]);
-  const [paused, setPaused] = useState(false);
+  // What covers the frozen game, if anything. "How to play" remembers whether it was opened
+  // from the pause screen, so closing it never resumes a run the player had paused.
+  const [overlay, setOverlay] = useState<Overlay>(null);
+  const paused = overlay !== null;
 
   useEffect(() => {
     // A call, a notification, switching apps: pause, and wait for the player to come back
     // and choose to resume — a run never carries on by surprise.
     const onVisibility = () => {
-      if (document.hidden) setPaused(true);
+      if (document.hidden) setOverlay((o) => o ?? { kind: 'pause' });
     };
     // P on a keyboard. (Esc, handled by each game, leaves.)
     const onKey = (event: KeyboardEvent) => {
-      if (event.code === 'KeyP' && !event.repeat) setPaused((p) => !p);
+      if (event.code !== 'KeyP' || event.repeat) return;
+      setOverlay((o) => (o === null ? { kind: 'pause' } : o.kind === 'pause' ? null : o));
     };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('keydown', onKey);
@@ -134,8 +141,27 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
             <span data-testid="player-best">Best: {bestScore ?? '…'}</span>
             <button
               type="button"
+              className={styles.infoButton}
+              onClick={() =>
+                setOverlay((o) => ({ kind: 'help', back: o?.kind === 'pause' ? 'pause' : 'game' }))
+              }
+              aria-label="How to play"
+              disabled={overlay?.kind === 'help'}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 8 8"
+                aria-hidden="true"
+                shapeRendering="crispEdges"
+              >
+                <path d="M3 0h2v2H3zM2 3h3v4h1v1H2V7h1V4H2z" fill="currentColor" />
+              </svg>
+            </button>
+            <button
+              type="button"
               className={styles.pauseButton}
-              onClick={() => setPaused(true)}
+              onClick={() => setOverlay({ kind: 'pause' })}
               aria-label="Pause"
               disabled={paused}
             >
@@ -157,7 +183,21 @@ function GameSession({ game, challenge }: { game: GameDefinition; challenge: Cha
           game={game}
           services={services}
           paused={paused}
-          overlay={paused && <PauseScreen onResume={() => setPaused(false)} onQuit={leave} />}
+          overlay={
+            overlay?.kind === 'pause' ? (
+              <PauseScreen
+                onResume={() => setOverlay(null)}
+                onHowToPlay={() => setOverlay({ kind: 'help', back: 'pause' })}
+                onQuit={leave}
+              />
+            ) : overlay?.kind === 'help' ? (
+              <HowToPlayScreen
+                game={game}
+                closeLabel={overlay.back === 'pause' ? 'Back' : 'Back to game'}
+                onClose={() => setOverlay(overlay.back === 'pause' ? { kind: 'pause' } : null)}
+              />
+            ) : null
+          }
         />
       )}
       <RunBar game={game} challenge={challenge} lastRun={lastRun} />

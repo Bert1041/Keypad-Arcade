@@ -83,10 +83,25 @@ export interface GameInstance {
 
 export type CreateGame = (parent: HTMLElement, services: GameServices) => GameInstance;
 
+/**
+ * What the game's "How to play" screen says. Written for players, not developers: short plain
+ * lines, touch first, keys after.
+ */
+export interface HowToPlay {
+  /** One sentence: what you are trying to do. */
+  goal: string;
+  /** How to play on a phone, then on a computer. */
+  controls: readonly string[];
+  /** The rules worth knowing, and how points come. */
+  rules: readonly string[];
+}
+
 export interface GameDefinition {
   id: GameId;
   title: string;
   description: string;
+  /** Required: no game ships without telling players how to play it. */
+  howToPlay: HowToPlay;
   thumbnail: string;
   orientation: Orientation;
   /**
