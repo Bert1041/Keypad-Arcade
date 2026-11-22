@@ -240,9 +240,9 @@ var DIRS = {
 	r: "right"
 };
 /** The most steps a run can take: every cell twice over is far beyond a perfect game. */
-var MAX_STEPS$3 = 13200;
+var MAX_STEPS$4 = 13200;
 var MAX_TURNS = 2e4;
-function isReplay$3(value) {
+function isReplay$4(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, turns } = value;
 	if (v !== 1 || !Array.isArray(turns) || turns.length > MAX_TURNS) return false;
@@ -250,20 +250,20 @@ function isReplay$3(value) {
 	for (const turn of turns) {
 		if (!Array.isArray(turn) || turn.length !== 2) return false;
 		const [at, dir] = turn;
-		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$3) return false;
+		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$4) return false;
 		if (typeof dir !== "string" || !(dir in DIRS)) return false;
 		previous = at;
 	}
 	return true;
 }
-var replayRun$3 = (random, replay) => {
-	if (!isReplay$3(replay)) return {
+var replayRun$4 = (random, replay) => {
+	if (!isReplay$4(replay)) return {
 		ok: false,
 		reason: "not a Coil replay"
 	};
 	let state = createCoil(random, 15, 22);
 	let next = 0;
-	for (let taken = 0; taken <= MAX_STEPS$3; taken++) {
+	for (let taken = 0; taken <= MAX_STEPS$4; taken++) {
 		for (let turn = replay.turns[next]; turn && turn[0] === taken; turn = replay.turns[next]) {
 			const dir = DIRS[turn[1]];
 			if (dir) state = queueTurn(state, dir);
@@ -291,7 +291,7 @@ var replayRun$3 = (random, replay) => {
 *
 * Cards are numbered in reading order: index = row * cols + col.
 */
-var STEP_MS$2 = 1e3 / 60;
+var STEP_MS$3 = 1e3 / 60;
 /** Board sizes in play order; after the last, it repeats. */
 var BOARDS = [
 	{
@@ -446,10 +446,10 @@ function turn(state, index, events) {
 	}
 }
 /** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
-function tick$2(state, input, random) {
+function tick$3(state, input, random) {
 	if (state.over) return [];
 	const events = [];
-	state.timeMs += STEP_MS$2;
+	state.timeMs += STEP_MS$3;
 	if (state.nextBoardAtMs !== null) {
 		if (state.timeMs >= state.nextBoardAtMs) {
 			deal(state, state.board + 1, random);
@@ -460,7 +460,7 @@ function tick$2(state, input, random) {
 		}
 		return events;
 	}
-	state.leftMs -= STEP_MS$2;
+	state.leftMs -= STEP_MS$3;
 	if (state.leftMs <= 0) {
 		state.leftMs = 0;
 		state.over = true;
@@ -472,18 +472,244 @@ function tick$2(state, input, random) {
 }
 // src/games/pairs/verify.ts
 /** The longest run accepted: 30 minutes of steps (the clock alone caps a run near 99 s plus bonuses). */
-var MAX_STEPS$2 = 108e3;
+var MAX_STEPS$3 = 108e3;
 var MAX_CARD = 36;
-function isReplay$2(value) {
+function isReplay$3(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, taps } = value;
-	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$2) return false;
+	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$3) return false;
 	let previous = 0;
 	for (const tap of taps) {
 		if (!Array.isArray(tap) || tap.length !== 2) return false;
 		const [step, card] = tap;
-		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$2) return false;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$3) return false;
 		if (!Number.isInteger(card) || card < 0 || card >= MAX_CARD) return false;
+		previous = step;
+	}
+	return true;
+}
+var replayRun$3 = (random, replay) => {
+	if (!isReplay$3(replay)) return {
+		ok: false,
+		reason: "not a Pairs replay"
+	};
+	const state = createPairs(random);
+	let next = 0;
+	for (let step = 1; step <= MAX_STEPS$3; step++) {
+		const tap = replay.taps[next];
+		const card = tap && tap[0] === step ? tap[1] : null;
+		if (card !== null) next += 1;
+		tick$3(state, { tap: card }, random);
+		if (state.over) return next === replay.taps.length ? {
+			ok: true,
+			score: state.score
+		} : {
+			ok: false,
+			reason: "inputs after the run ended"
+		};
+	}
+	return {
+		ok: false,
+		reason: "the run never ended"
+	};
+};
+// src/games/plunge/logic/plunge.ts
+/**
+* Plunge's rules: a fixed-step simulation with no Phaser in it. The scene calls tick() 60 times
+* per simulated second with the direction held, so a run depends only on the seed and when the
+* player held which way.
+*
+* World px, y downwards. Platforms rise from below the screen towards the spikes at the top.
+*/
+var STEP_MS$2 = 1e3 / 60;
+var GRAVITY$1 = 1400;
+var MIN_W = 72;
+var RISE_GAIN = .8;
+var SPIKE_CHANCE = .18;
+var LIFE_CHANCE = .025;
+var NO_INPUT$1 = { axis: 0 };
+function riseSpeed(playedMs) {
+	return 70 + RISE_GAIN * playedMs / 1e3;
+}
+/** Spiked platforms keep at least this far clear of the drop points of the safe one above. */
+var TRAP_CLEARANCE = 70;
+var frac = (n) => n - Math.floor(n);
+/**
+* Makes the next platform at `y`. Random placement left players stranded — every platform below
+* out of reach — so safe platforms form a route: each within REACH of a drop point (an edge not
+* against a wall) of the safe one before it. Spiked platforms are traps off that route, never
+* under a drop point; with no room for one, the platform is safe instead.
+*
+* Always draws the same four numbers, so the n-th platform of a seed is the same however the
+* player is doing.
+*/
+function makePlatform(state, y, random) {
+	const wRoll = random();
+	const xRoll = random();
+	const spikeRoll = random();
+	const pickupRoll = random();
+	const w = Math.round(MIN_W + wRoll * 48);
+	const fits = (x) => Math.max(0, Math.min(360 - w, Math.round(x)));
+	const anchor = state.anchor;
+	let spiked = false;
+	let x = fits(xRoll * (360 - w));
+	if (anchor) {
+		const wantsSpikes = state.playedMs >= 2e4 && !state.lastSpiked && spikeRoll < SPIKE_CHANCE;
+		const leftRoom = anchor.x - TRAP_CLEARANCE - w;
+		const rightStart = anchor.x + anchor.w + TRAP_CLEARANCE;
+		const rightRoom = 360 - w - rightStart;
+		if (wantsSpikes && (leftRoom >= 0 || rightRoom >= 0)) {
+			spiked = true;
+			x = leftRoom >= 0 && (rightRoom < 0 || xRoll < .5) ? fits(frac(xRoll * 2) * leftRoom) : fits(rightStart + frac(xRoll * 2) * rightRoom);
+		} else {
+			const leftDrop = anchor.x - 9 - 2;
+			const rightDrop = anchor.x + anchor.w + 9 + 2;
+			x = fits((leftDrop > 18 && (!(rightDrop < 342) || xRoll < .5) ? leftDrop : rightDrop) + (frac(xRoll * 2) - .5) * 2 * 34 - w * (.15 + .7 * frac(xRoll * 7)));
+		}
+	}
+	const pickup = spiked ? null : pickupRoll < LIFE_CHANCE ? "life" : pickupRoll < .145 ? "star" : null;
+	state.lastSpiked = spiked;
+	if (!spiked) state.anchor = {
+		x,
+		w
+	};
+	return {
+		id: state.nextId++,
+		x,
+		y,
+		w,
+		spiked,
+		pickup
+	};
+}
+function createPlunge(random) {
+	const state = {
+		timeMs: 0,
+		playedMs: 0,
+		platforms: [],
+		ball: {
+			x: 180,
+			y: 0,
+			vy: 0,
+			on: null
+		},
+		lives: 3,
+		score: 0,
+		pointsMs: 0,
+		risen: 0,
+		nextId: 1,
+		lastSpiked: false,
+		anchor: null,
+		respawnAtMs: null,
+		over: false
+	};
+	for (let y = 560; y > 124; y -= 72) state.platforms.unshift(makePlatform(state, y, random));
+	placeBall(state);
+	return state;
+}
+/** Stands the ball on the safe platform nearest mid-screen, clearing it of spikes if need be. */
+function placeBall(state) {
+	const middle = 300;
+	const target = [...state.platforms].sort((a, b) => Math.abs(a.y - middle) - Math.abs(b.y - middle))[0];
+	if (!target) throw new Error("Plunge: no platform to stand on");
+	target.spiked = false;
+	state.ball = {
+		x: target.x + target.w / 2,
+		y: target.y - 9,
+		vy: 0,
+		on: target.id
+	};
+}
+function loseLife(state, cause) {
+	state.lives -= 1;
+	const events = [{
+		type: "died",
+		cause
+	}];
+	if (state.lives <= 0) {
+		state.over = true;
+		events.push({ type: "over" });
+	} else state.respawnAtMs = state.timeMs + 800;
+	return events;
+}
+/** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
+function tick$2(state, input, random) {
+	if (state.over) return [];
+	state.timeMs += STEP_MS$2;
+	const dt = STEP_MS$2 / 1e3;
+	if (state.respawnAtMs !== null) {
+		if (state.timeMs < state.respawnAtMs) return [];
+		state.respawnAtMs = null;
+		placeBall(state);
+		return [{ type: "respawn" }];
+	}
+	const events = [];
+	state.playedMs += STEP_MS$2;
+	state.pointsMs += STEP_MS$2;
+	const per = 100;
+	while (state.pointsMs >= per) {
+		state.pointsMs -= per;
+		state.score += 1;
+	}
+	const rise = riseSpeed(state.playedMs) * dt;
+	for (const p of state.platforms) p.y -= rise;
+	state.risen += rise;
+	while (state.risen >= 72) {
+		state.risen -= 72;
+		const lowest = state.platforms.at(-1)?.y ?? 600;
+		state.platforms.push(makePlatform(state, lowest + 72, random));
+	}
+	state.platforms = state.platforms.filter((p) => p.y > 4);
+	const ball = state.ball;
+	const axis = Math.sign(input.axis);
+	ball.x = Math.max(9, Math.min(351, ball.x + axis * 210 * dt));
+	const standing = state.platforms.find((p) => p.id === ball.on);
+	if (standing && ball.x >= standing.x && ball.x <= standing.x + standing.w) {
+		ball.y = standing.y - 9;
+		ball.vy = 0;
+	} else {
+		ball.on = null;
+		const before = ball.y + 9;
+		ball.vy = Math.min(560, ball.vy + GRAVITY$1 * dt);
+		ball.y += ball.vy * dt;
+		const after = ball.y + 9;
+		const landing = state.platforms.find((p) => before <= p.y + rise && after >= p.y && ball.x >= p.x && ball.x <= p.x + p.w);
+		if (landing) {
+			if (landing.spiked) return [...events, ...loseLife(state, "spikes")];
+			ball.on = landing.id;
+			ball.y = landing.y - 9;
+			ball.vy = 0;
+			events.push({ type: "land" });
+		}
+	}
+	const on = state.platforms.find((p) => p.id === ball.on);
+	if (on?.pickup && Math.abs(ball.x - (on.x + on.w / 2)) < 15) {
+		if (on.pickup === "star") {
+			state.score += 50;
+			events.push({ type: "star" });
+		} else {
+			state.lives = Math.min(5, state.lives + 1);
+			events.push({ type: "life" });
+		}
+		on.pickup = null;
+	}
+	if (ball.y - 9 <= 44) return [...events, ...loseLife(state, "ceiling")];
+	if (ball.y - 9 > 600) return [...events, ...loseLife(state, "fell")];
+	return events;
+}
+// src/games/plunge/verify.ts
+/** The longest run accepted: 30 minutes of steps (the shaft outruns any ball after ~10). */
+var MAX_STEPS$2 = 108e3;
+function isReplay$2(value) {
+	if (typeof value !== "object" || value === null) return false;
+	const { v, input } = value;
+	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$2) return false;
+	let previous = 0;
+	for (const change of input) {
+		if (!Array.isArray(change) || change.length !== 2) return false;
+		const [step, axis] = change;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$2) return false;
+		if (axis !== -1 && axis !== 0 && axis !== 1) return false;
 		previous = step;
 	}
 	return true;
@@ -491,16 +717,19 @@ function isReplay$2(value) {
 var replayRun$2 = (random, replay) => {
 	if (!isReplay$2(replay)) return {
 		ok: false,
-		reason: "not a Pairs replay"
+		reason: "not a Plunge replay"
 	};
-	const state = createPairs(random);
+	const state = createPlunge(random);
+	let input = NO_INPUT$1;
 	let next = 0;
 	for (let step = 1; step <= MAX_STEPS$2; step++) {
-		const tap = replay.taps[next];
-		const card = tap && tap[0] === step ? tap[1] : null;
-		if (card !== null) next += 1;
-		tick$2(state, { tap: card }, random);
-		if (state.over) return next === replay.taps.length ? {
+		const change = replay.input[next];
+		if (change && change[0] === step) {
+			input = { axis: change[1] };
+			next += 1;
+		}
+		tick$2(state, input, random);
+		if (state.over) return next === replay.input.length ? {
 			ok: true,
 			score: state.score
 		} : {
@@ -1208,9 +1437,10 @@ function cleanNickname(raw) {
 */
 var BOARD_GAMES = {
 	skyline: replayRun$1,
-	coil: replayRun$3,
+	coil: replayRun$4,
 	"star-raid": replayRun,
-	pairs: replayRun$2
+	pairs: replayRun$3,
+	plunge: replayRun$2
 };
 var KEEP_DAYS = 8;
 /**

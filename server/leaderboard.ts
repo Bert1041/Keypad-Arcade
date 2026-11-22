@@ -4,6 +4,7 @@ import { dailySeed, isDate, postableDates } from '../src/core/challenge/daily';
 import { seededRandom } from '../src/core/random/seededRandom';
 import { replayRun as replayCoil } from '../src/games/coil/verify';
 import { replayRun as replayPairs } from '../src/games/pairs/verify';
+import { replayRun as replayPlunge } from '../src/games/plunge/verify';
 import { replayRun as replaySkyline } from '../src/games/skyline/verify';
 import { replayRun as replayStarRaid } from '../src/games/star-raid/verify';
 import type { ReplayRun } from '../src/games/types';
@@ -21,6 +22,7 @@ export const BOARD_GAMES: Readonly<Record<string, ReplayRun>> = {
   coil: replayCoil,
   'star-raid': replayStarRaid,
   pairs: replayPairs,
+  plunge: replayPlunge,
 };
 
 export const TOP = 50;

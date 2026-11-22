@@ -34,6 +34,15 @@ declare global {
       symbols: number[];
       centres: { x: number; y: number }[];
     };
+    /** Plunge: a read-only look at the run. */
+    __PLUNGE_DEBUG__?: () => {
+      started: boolean;
+      over: boolean;
+      lives: number;
+      score: number;
+      ball: { x: number; y: number; on: number | null };
+      deaths: { x: number; y: number }[];
+    };
     /** Skyline: a read-only look at the run. */
     __SKYLINE_DEBUG__?: () => {
       started: boolean;

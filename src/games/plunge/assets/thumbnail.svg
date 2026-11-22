@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges">
+  <rect width="24" height="24" fill="#10121b"/>
+  <!-- ceiling spikes -->
+  <g fill="#a3a9c2"><rect x="1" y="0" width="22" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="18" y="1" width="1" height="1"/><rect x="22" y="1" width="1" height="1"/></g>
+  <!-- platforms, one spiked -->
+  <rect x="3" y="8" width="8" height="2" fill="#2ec4b6"/>
+  <rect x="13" y="13" width="8" height="2" fill="#5a3340"/>
+  <g fill="#d9a3b0"><rect x="14" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/></g>
+  <rect x="5" y="18" width="9" height="2" fill="#2ec4b6"/>
+  <!-- the ball, falling -->
+  <g fill="#ff5c6c"><rect x="12" y="4" width="3" height="1"/><rect x="11" y="5" width="5" height="2"/><rect x="12" y="7" width="3" height="1"/></g>
+  <rect x="12" y="5" width="1" height="1" fill="#ffc2c8"/>
+</svg>

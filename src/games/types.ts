@@ -9,7 +9,8 @@ export type { RandomFn };
  */
 
 /** Stable IDs. Saved scores are keyed by these, so never rename one after it ships. */
-export type GameId = 'skyline' | 'coil' | 'star-raid' | 'rebound' | 'pairs' | 'prototype';
+export type GameId =
+  'skyline' | 'coil' | 'star-raid' | 'rebound' | 'pairs' | 'plunge' | 'prototype';
 
 export type Orientation = 'portrait' | 'landscape' | 'any';
 
