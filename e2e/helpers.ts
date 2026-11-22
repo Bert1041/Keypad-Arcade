@@ -9,6 +9,7 @@ export const GAME_IDS = [
   'rebound',
   'pairs',
   'plunge',
+  'wallbreak',
   'prototype',
 ] as const;
 import { DB_NAME } from '../src/appInfo';

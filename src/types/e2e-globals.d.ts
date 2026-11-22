@@ -43,6 +43,18 @@ declare global {
       ball: { x: number; y: number; on: number | null };
       deaths: { x: number; y: number }[];
     };
+    /** Wallbreak: a read-only look at the run. */
+    __WALLBREAK_DEBUG__?: () => {
+      started: boolean;
+      over: boolean;
+      serving: boolean;
+      level: number;
+      lives: number;
+      score: number;
+      bricks: number;
+      paddleX: number;
+      balls: { x: number; y: number }[];
+    };
     /** Skyline: a read-only look at the run. */
     __SKYLINE_DEBUG__?: () => {
       started: boolean;

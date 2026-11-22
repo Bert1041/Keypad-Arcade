@@ -5,6 +5,7 @@ import { seededRandom } from '../src/core/random/seededRandom';
 import { replayRun as replayCoil } from '../src/games/coil/verify';
 import { replayRun as replayPairs } from '../src/games/pairs/verify';
 import { replayRun as replayPlunge } from '../src/games/plunge/verify';
+import { replayRun as replayWallbreak } from '../src/games/wallbreak/verify';
 import { replayRun as replaySkyline } from '../src/games/skyline/verify';
 import { replayRun as replayStarRaid } from '../src/games/star-raid/verify';
 import type { ReplayRun } from '../src/games/types';
@@ -23,6 +24,7 @@ export const BOARD_GAMES: Readonly<Record<string, ReplayRun>> = {
   'star-raid': replayStarRaid,
   pairs: replayPairs,
   plunge: replayPlunge,
+  wallbreak: replayWallbreak,
 };
 
 export const TOP = 50;

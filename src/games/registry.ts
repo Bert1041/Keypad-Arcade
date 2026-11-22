@@ -6,6 +6,7 @@ import { plunge } from './plunge';
 import { rebound } from './rebound';
 import { skyline } from './skyline';
 import { starRaid } from './star-raid';
+import { wallbreak } from './wallbreak';
 
 /**
  * Every playable game, in library order. Import only a game's index.ts here — never its
@@ -22,6 +23,7 @@ export const games: readonly GameDefinition[] = [
   rebound,
   pairs,
   plunge,
+  wallbreak,
   ...(import.meta.env.DEV || import.meta.env.VITE_E2E === '1' ? [prototype] : []),
 ];
 

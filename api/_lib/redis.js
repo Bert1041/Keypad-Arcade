@@ -240,9 +240,9 @@ var DIRS = {
 	r: "right"
 };
 /** The most steps a run can take: every cell twice over is far beyond a perfect game. */
-var MAX_STEPS$4 = 13200;
+var MAX_STEPS$5 = 13200;
 var MAX_TURNS = 2e4;
-function isReplay$4(value) {
+function isReplay$5(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, turns } = value;
 	if (v !== 1 || !Array.isArray(turns) || turns.length > MAX_TURNS) return false;
@@ -250,20 +250,20 @@ function isReplay$4(value) {
 	for (const turn of turns) {
 		if (!Array.isArray(turn) || turn.length !== 2) return false;
 		const [at, dir] = turn;
-		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$4) return false;
+		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$5) return false;
 		if (typeof dir !== "string" || !(dir in DIRS)) return false;
 		previous = at;
 	}
 	return true;
 }
-var replayRun$4 = (random, replay) => {
-	if (!isReplay$4(replay)) return {
+var replayRun$5 = (random, replay) => {
+	if (!isReplay$5(replay)) return {
 		ok: false,
 		reason: "not a Coil replay"
 	};
 	let state = createCoil(random, 15, 22);
 	let next = 0;
-	for (let taken = 0; taken <= MAX_STEPS$4; taken++) {
+	for (let taken = 0; taken <= MAX_STEPS$5; taken++) {
 		for (let turn = replay.turns[next]; turn && turn[0] === taken; turn = replay.turns[next]) {
 			const dir = DIRS[turn[1]];
 			if (dir) state = queueTurn(state, dir);
@@ -291,7 +291,7 @@ var replayRun$4 = (random, replay) => {
 *
 * Cards are numbered in reading order: index = row * cols + col.
 */
-var STEP_MS$3 = 1e3 / 60;
+var STEP_MS$4 = 1e3 / 60;
 /** Board sizes in play order; after the last, it repeats. */
 var BOARDS = [
 	{
@@ -446,10 +446,10 @@ function turn(state, index, events) {
 	}
 }
 /** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
-function tick$3(state, input, random) {
+function tick$4(state, input, random) {
 	if (state.over) return [];
 	const events = [];
-	state.timeMs += STEP_MS$3;
+	state.timeMs += STEP_MS$4;
 	if (state.nextBoardAtMs !== null) {
 		if (state.timeMs >= state.nextBoardAtMs) {
 			deal(state, state.board + 1, random);
@@ -460,7 +460,7 @@ function tick$3(state, input, random) {
 		}
 		return events;
 	}
-	state.leftMs -= STEP_MS$3;
+	state.leftMs -= STEP_MS$4;
 	if (state.leftMs <= 0) {
 		state.leftMs = 0;
 		state.over = true;
@@ -472,34 +472,34 @@ function tick$3(state, input, random) {
 }
 // src/games/pairs/verify.ts
 /** The longest run accepted: 30 minutes of steps (the clock alone caps a run near 99 s plus bonuses). */
-var MAX_STEPS$3 = 108e3;
+var MAX_STEPS$4 = 108e3;
 var MAX_CARD = 36;
-function isReplay$3(value) {
+function isReplay$4(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, taps } = value;
-	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$3) return false;
+	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$4) return false;
 	let previous = 0;
 	for (const tap of taps) {
 		if (!Array.isArray(tap) || tap.length !== 2) return false;
 		const [step, card] = tap;
-		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$3) return false;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$4) return false;
 		if (!Number.isInteger(card) || card < 0 || card >= MAX_CARD) return false;
 		previous = step;
 	}
 	return true;
 }
-var replayRun$3 = (random, replay) => {
-	if (!isReplay$3(replay)) return {
+var replayRun$4 = (random, replay) => {
+	if (!isReplay$4(replay)) return {
 		ok: false,
 		reason: "not a Pairs replay"
 	};
 	const state = createPairs(random);
 	let next = 0;
-	for (let step = 1; step <= MAX_STEPS$3; step++) {
+	for (let step = 1; step <= MAX_STEPS$4; step++) {
 		const tap = replay.taps[next];
 		const card = tap && tap[0] === step ? tap[1] : null;
 		if (card !== null) next += 1;
-		tick$3(state, { tap: card }, random);
+		tick$4(state, { tap: card }, random);
 		if (state.over) return next === replay.taps.length ? {
 			ok: true,
 			score: state.score
@@ -521,13 +521,13 @@ var replayRun$3 = (random, replay) => {
 *
 * World px, y downwards. Platforms rise from below the screen towards the spikes at the top.
 */
-var STEP_MS$2 = 1e3 / 60;
+var STEP_MS$3 = 1e3 / 60;
 var GRAVITY$1 = 1400;
 var MIN_W = 72;
 var RISE_GAIN = .8;
 var SPIKE_CHANCE = .18;
 var LIFE_CHANCE = .025;
-var NO_INPUT$1 = { axis: 0 };
+var NO_INPUT$2 = { axis: 0 };
 function riseSpeed(playedMs) {
 	return 70 + RISE_GAIN * playedMs / 1e3;
 }
@@ -633,10 +633,10 @@ function loseLife(state, cause) {
 	return events;
 }
 /** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
-function tick$2(state, input, random) {
+function tick$3(state, input, random) {
 	if (state.over) return [];
-	state.timeMs += STEP_MS$2;
-	const dt = STEP_MS$2 / 1e3;
+	state.timeMs += STEP_MS$3;
+	const dt = STEP_MS$3 / 1e3;
 	if (state.respawnAtMs !== null) {
 		if (state.timeMs < state.respawnAtMs) return [];
 		state.respawnAtMs = null;
@@ -644,8 +644,8 @@ function tick$2(state, input, random) {
 		return [{ type: "respawn" }];
 	}
 	const events = [];
-	state.playedMs += STEP_MS$2;
-	state.pointsMs += STEP_MS$2;
+	state.playedMs += STEP_MS$3;
+	state.pointsMs += STEP_MS$3;
 	const per = 100;
 	while (state.pointsMs >= per) {
 		state.pointsMs -= per;
@@ -699,17 +699,380 @@ function tick$2(state, input, random) {
 }
 // src/games/plunge/verify.ts
 /** The longest run accepted: 30 minutes of steps (the shaft outruns any ball after ~10). */
+var MAX_STEPS$3 = 108e3;
+function isReplay$3(value) {
+	if (typeof value !== "object" || value === null) return false;
+	const { v, input } = value;
+	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$3) return false;
+	let previous = 0;
+	for (const change of input) {
+		if (!Array.isArray(change) || change.length !== 2) return false;
+		const [step, axis] = change;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$3) return false;
+		if (axis !== -1 && axis !== 0 && axis !== 1) return false;
+		previous = step;
+	}
+	return true;
+}
+var replayRun$3 = (random, replay) => {
+	if (!isReplay$3(replay)) return {
+		ok: false,
+		reason: "not a Plunge replay"
+	};
+	const state = createPlunge(random);
+	let input = NO_INPUT$2;
+	let next = 0;
+	for (let step = 1; step <= MAX_STEPS$3; step++) {
+		const change = replay.input[next];
+		if (change && change[0] === step) {
+			input = { axis: change[1] };
+			next += 1;
+		}
+		tick$3(state, input, random);
+		if (state.over) return next === replay.input.length ? {
+			ok: true,
+			score: state.score
+		} : {
+			ok: false,
+			reason: "inputs after the run ended"
+		};
+	}
+	return {
+		ok: false,
+		reason: "the run never ended"
+	};
+};
+// src/games/wallbreak/logic/wallbreak.ts
+/**
+* Wallbreak's rules: a fixed-step simulation with no Phaser in it. The scene calls tick() 60
+* times per simulated second with where the player wants the paddle and whether they served, so
+* a run depends only on the seed and those inputs.
+*
+* World px, y downwards. Only + − × ÷, Math.sqrt and rounding are used, which every engine
+* computes alike (the leaderboard replays runs in Node).
+*/
+var STEP_MS$2 = 1e3 / 60;
+var PADDLE_KEY_SPEED = 420;
+/**
+* Ball speed, px/s: 40 more each level, and 2 more with every paddle hit within a level, without
+* limit. By level 10 it crosses the screen in well under a second, past what a person can follow,
+* so people's runs end. A perfect program that tracks the ball can go on far longer (tested to
+* 30 minutes); the leaderboard refuses any run longer than that (verify.ts).
+*/
+function ballSpeed(level, hits) {
+	return 280 + 40 * (level - 1) + 2 * hits;
+}
+/** How steep the paddle can send the ball: horizontal/vertical at the paddle's very edge. */
+var STEER = 1.5;
+/** The ball's vertical share never drops below this, so it cannot loop side to side for ever. */
+var MIN_VERTICAL = .35;
+var WIDE_MS = 12e3;
+var SLOW_MS = 8e3;
+var SLOW_FACTOR = .7;
+var DROP_SPEED = 130;
+var DROP_SIZE = 16;
+/** Pause between a cleared wall and the next. */
+var NEXT_LEVEL_MS = 1e3;
+var NO_INPUT$1 = {
+	targetX: null,
+	axis: 0,
+	serve: false
+};
+var POWERS = [
+	["wide", .35],
+	["multi", .3],
+	["slow", .25],
+	["life", .1]
+];
+function powerFor(roll) {
+	let acc = 0;
+	for (const [kind, share] of POWERS) {
+		acc += share;
+		if (roll < acc) return kind;
+	}
+	return "wide";
+}
+function brickRect(b) {
+	return {
+		x: 1 + b.col * 36,
+		y: 80 + b.row * 16,
+		w: 34,
+		h: 14
+	};
+}
+/**
+* Builds level `level`'s wall: a pattern mirrored left to right. Every level draws exactly
+* MAX_ROWS × COLS/2 × 3 numbers whatever it uses, so the n-th wall of a seed is the same for
+* everyone however their earlier levels went.
+*/
+function buildWall(state, level, random) {
+	const rows = Math.min(8, 3 + Math.ceil(level / 2));
+	const fill = Math.min(.9, .6 + .04 * level);
+	const strong = Math.min(.5, .05 + .06 * level);
+	const bricks = [];
+	for (let row = 0; row < 8; row++) for (let half = 0; half < 5; half++) {
+		const present = random() < fill;
+		const twoHits = random() < strong;
+		const dropRoll = random();
+		if (row >= rows || !present) continue;
+		for (const col of [half, 9 - half]) {
+			const mirrored = col !== half;
+			bricks.push({
+				id: state.nextId++,
+				col,
+				row,
+				hits: twoHits ? 2 : 1,
+				drop: !mirrored && dropRoll < .14 ? powerFor(dropRoll / .14) : null
+			});
+		}
+	}
+	if (bricks.length < 12) {
+		for (let col = 0; col < 10; col++) if (!bricks.some((b) => b.row === 0 && b.col === col)) bricks.push({
+			id: state.nextId++,
+			col,
+			row: 0,
+			hits: 1,
+			drop: null
+		});
+	}
+	return bricks;
+}
+function serveBall(state) {
+	state.serving = true;
+	state.balls = [{
+		x: state.paddle.x,
+		y: 547,
+		dx: 0,
+		dy: 0
+	}];
+}
+function createWallbreak(random) {
+	const state = {
+		timeMs: 0,
+		level: 1,
+		bricks: [],
+		paddle: {
+			x: 180,
+			w: 64
+		},
+		balls: [],
+		serving: true,
+		hits: 0,
+		drops: [],
+		wideUntilMs: 0,
+		slowUntilMs: 0,
+		lives: 3,
+		score: 0,
+		nextLevelAtMs: null,
+		nextId: 1,
+		over: false
+	};
+	state.bricks = buildWall(state, 1, random);
+	serveBall(state);
+	return state;
+}
+/** A unit direction from a horizontal/vertical ratio, upwards (dy < 0). */
+function upwards(ratio) {
+	const length = Math.sqrt(ratio * ratio + 1);
+	return {
+		dx: ratio / length,
+		dy: -1 / length
+	};
+}
+/** Keeps a direction from going nearly flat after a bounce. */
+function steepen(ball) {
+	if (Math.abs(ball.dy) >= MIN_VERTICAL) return;
+	const dy = ball.dy < 0 ? -.35 : MIN_VERTICAL;
+	ball.dx = (ball.dx < 0 ? -1 : 1) * Math.sqrt(1 - MIN_VERTICAL * MIN_VERTICAL);
+	ball.dy = dy;
+}
+function overlaps$1(ball, r) {
+	return ball.x + 5 > r.x && ball.x - 5 < r.x + r.w && ball.y + 5 > r.y && ball.y - 5 < r.y + r.h;
+}
+/** The first brick the ball overlaps, if any. */
+function brickAt(state, ball) {
+	return state.bricks.find((b) => overlaps$1(ball, brickRect(b)));
+}
+function hitBrick(state, brick, events) {
+	brick.hits -= 1;
+	state.score += 10;
+	const broken = brick.hits <= 0;
+	events.push({
+		type: "brick",
+		id: brick.id,
+		broken
+	});
+	if (!broken) return;
+	state.bricks = state.bricks.filter((b) => b !== brick);
+	if (brick.drop) {
+		const r = brickRect(brick);
+		state.drops.push({
+			id: state.nextId++,
+			kind: brick.drop,
+			x: r.x + r.w / 2,
+			y: r.y + r.h / 2
+		});
+	}
+}
+function movePaddle(state, input, dt) {
+	const paddle = state.paddle;
+	paddle.w = state.timeMs < state.wideUntilMs ? 100 : 64;
+	const half = paddle.w / 2;
+	if (input.targetX !== null) {
+		const step = 900 * dt;
+		paddle.x += Math.max(-step, Math.min(step, input.targetX - paddle.x));
+	} else paddle.x += Math.sign(input.axis) * PADDLE_KEY_SPEED * dt;
+	paddle.x = Math.max(half, Math.min(360 - half, paddle.x));
+}
+/** Moves one ball by `distance`, bouncing off walls, bricks and the paddle. */
+function moveBall(state, ball, distance, events) {
+	const parts = Math.max(1, Math.ceil(distance / 3));
+	const step = distance / parts;
+	for (let i = 0; i < parts; i++) {
+		ball.x += ball.dx * step;
+		if (ball.x - 5 < 0 || ball.x + 5 > 360) {
+			ball.x = Math.max(5, Math.min(355, ball.x));
+			ball.dx = -ball.dx;
+			events.push({ type: "wall" });
+		}
+		const sideways = brickAt(state, ball);
+		if (sideways) {
+			ball.x -= ball.dx * step;
+			ball.dx = -ball.dx;
+			hitBrick(state, sideways, events);
+		}
+		ball.y += ball.dy * step;
+		if (ball.y - 5 < 0) {
+			ball.y = 5;
+			ball.dy = -ball.dy;
+			events.push({ type: "wall" });
+		}
+		const vertical = brickAt(state, ball);
+		if (vertical) {
+			ball.y -= ball.dy * step;
+			ball.dy = -ball.dy;
+			hitBrick(state, vertical, events);
+		}
+		const paddle = state.paddle;
+		if (ball.dy > 0 && ball.y + 5 >= 552 && ball.y + 5 <= 562 && ball.x >= paddle.x - paddle.w / 2 - 5 && ball.x <= paddle.x + paddle.w / 2 + 5) {
+			const dir = upwards(Math.max(-1, Math.min(1, (ball.x - paddle.x) / (paddle.w / 2))) * STEER);
+			ball.dx = dir.dx;
+			ball.dy = dir.dy;
+			ball.y = 547;
+			state.hits += 1;
+			events.push({ type: "paddle" });
+		}
+		steepen(ball);
+	}
+}
+function catchDrops(state, dt, events) {
+	const paddle = state.paddle;
+	const kept = [];
+	for (const drop of state.drops) {
+		drop.y += DROP_SPEED * dt;
+		if (!(drop.y + DROP_SIZE / 2 >= 552 && drop.y - DROP_SIZE / 2 <= 562 && Math.abs(drop.x - paddle.x) <= paddle.w / 2 + DROP_SIZE / 2)) {
+			if (drop.y - DROP_SIZE / 2 < 600) kept.push(drop);
+			continue;
+		}
+		state.score += 25;
+		events.push({
+			type: "catch",
+			kind: drop.kind
+		});
+		if (drop.kind === "wide") state.wideUntilMs = state.timeMs + WIDE_MS;
+		else if (drop.kind === "slow") state.slowUntilMs = state.timeMs + SLOW_MS;
+		else if (drop.kind === "life") state.lives = Math.min(5, state.lives + 1);
+		else if (!state.serving) {
+			const from = state.balls[0];
+			if (from) for (const ratio of [-.8, .8]) {
+				const dir = upwards(ratio);
+				state.balls.push({
+					x: from.x,
+					y: from.y,
+					dx: dir.dx,
+					dy: dir.dy
+				});
+			}
+		}
+	}
+	state.drops = kept;
+}
+/** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
+function tick$2(state, input, random) {
+	if (state.over) return [];
+	const events = [];
+	state.timeMs += STEP_MS$2;
+	const dt = STEP_MS$2 / 1e3;
+	if (state.nextLevelAtMs !== null) {
+		if (state.timeMs < state.nextLevelAtMs) return [];
+		state.nextLevelAtMs = null;
+		state.level += 1;
+		state.hits = 0;
+		state.bricks = buildWall(state, state.level, random);
+		state.drops = [];
+		state.wideUntilMs = 0;
+		state.slowUntilMs = 0;
+		serveBall(state);
+		return [{
+			type: "level",
+			level: state.level
+		}];
+	}
+	movePaddle(state, input, dt);
+	if (state.serving) {
+		const ball = state.balls[0];
+		if (ball) ball.x = state.paddle.x;
+		if (!input.serve) return events;
+		state.serving = false;
+		if (ball) Object.assign(ball, upwards(.25));
+		events.push({ type: "serve" });
+	}
+	const slow = state.timeMs < state.slowUntilMs ? SLOW_FACTOR : 1;
+	const distance = ballSpeed(state.level, state.hits) * slow * dt;
+	for (const ball of state.balls) moveBall(state, ball, distance, events);
+	catchDrops(state, dt, events);
+	state.balls = state.balls.filter((b) => b.y - 5 < 600);
+	if (state.balls.length === 0) {
+		state.lives -= 1;
+		events.push({ type: "lost" });
+		state.drops = [];
+		state.wideUntilMs = 0;
+		state.slowUntilMs = 0;
+		if (state.lives <= 0) {
+			state.over = true;
+			events.push({ type: "over" });
+			return events;
+		}
+		serveBall(state);
+	}
+	if (state.bricks.length === 0 && state.nextLevelAtMs === null) {
+		const points = 100 * state.level;
+		state.score += points;
+		events.push({
+			type: "clear",
+			level: state.level,
+			points
+		});
+		state.nextLevelAtMs = state.timeMs + NEXT_LEVEL_MS;
+		state.balls = [];
+		state.drops = [];
+	}
+	return events;
+}
+// src/games/wallbreak/verify.ts
+/** The longest run accepted: 30 minutes of steps. */
 var MAX_STEPS$2 = 108e3;
+var MAX_TARGET$1 = 5e3;
 function isReplay$2(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, input } = value;
 	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$2) return false;
 	let previous = 0;
 	for (const change of input) {
-		if (!Array.isArray(change) || change.length !== 2) return false;
-		const [step, axis] = change;
+		if (!Array.isArray(change) || change.length !== 4) return false;
+		const [step, targetX, axis, serve] = change;
 		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$2) return false;
-		if (axis !== -1 && axis !== 0 && axis !== 1) return false;
+		if (!(targetX === null || Number.isInteger(targetX) && Math.abs(targetX) <= MAX_TARGET$1) || axis !== -1 && axis !== 0 && axis !== 1 || serve !== 0 && serve !== 1) return false;
 		previous = step;
 	}
 	return true;
@@ -717,15 +1080,19 @@ function isReplay$2(value) {
 var replayRun$2 = (random, replay) => {
 	if (!isReplay$2(replay)) return {
 		ok: false,
-		reason: "not a Plunge replay"
+		reason: "not a Wallbreak replay"
 	};
-	const state = createPlunge(random);
+	const state = createWallbreak(random);
 	let input = NO_INPUT$1;
 	let next = 0;
 	for (let step = 1; step <= MAX_STEPS$2; step++) {
 		const change = replay.input[next];
 		if (change && change[0] === step) {
-			input = { axis: change[1] };
+			input = {
+				targetX: change[1],
+				axis: change[2],
+				serve: change[3] === 1
+			};
 			next += 1;
 		}
 		tick$2(state, input, random);
@@ -1437,10 +1804,11 @@ function cleanNickname(raw) {
 */
 var BOARD_GAMES = {
 	skyline: replayRun$1,
-	coil: replayRun$4,
+	coil: replayRun$5,
 	"star-raid": replayRun,
-	pairs: replayRun$3,
-	plunge: replayRun$2
+	pairs: replayRun$4,
+	plunge: replayRun$3,
+	wallbreak: replayRun$2
 };
 var KEEP_DAYS = 8;
 /**
