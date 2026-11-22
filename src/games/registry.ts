@@ -1,6 +1,7 @@
 import type { GameDefinition } from './types';
 import { coil } from './coil';
 import { prototype } from './prototype';
+import { pairs } from './pairs';
 import { rebound } from './rebound';
 import { skyline } from './skyline';
 import { starRaid } from './star-raid';
@@ -18,6 +19,7 @@ export const games: readonly GameDefinition[] = [
   coil,
   starRaid,
   rebound,
+  pairs,
   ...(import.meta.env.DEV || import.meta.env.VITE_E2E === '1' ? [prototype] : []),
 ];
 

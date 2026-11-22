@@ -21,6 +21,19 @@ declare global {
     };
     /** The last finished run as the game reported it, replay included (leaderboard tests). */
     __LAST_RUN__?: { gameId: string; seed: number; score: number; replay?: unknown };
+    /** Pairs: a read-only look at the run, including where each card is drawn. */
+    __PAIRS_DEBUG__?: () => {
+      started: boolean;
+      over: boolean;
+      board: number;
+      cols: number;
+      rows: number;
+      score: number;
+      leftMs: number;
+      faces: ('down' | 'up' | 'matched')[];
+      symbols: number[];
+      centres: { x: number; y: number }[];
+    };
     /** Skyline: a read-only look at the run. */
     __SKYLINE_DEBUG__?: () => {
       started: boolean;

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="crispEdges">
+  <rect width="24" height="24" fill="#161823"/>
+  <!-- two cards face down, two face up showing a matching heart -->
+  <rect x="2" y="3" width="9" height="8" fill="#1f2232" stroke="#444a68" stroke-width="1"/>
+  <rect x="13" y="3" width="9" height="8" fill="#2c3046"/>
+  <rect x="2" y="13" width="9" height="8" fill="#2c3046"/>
+  <rect x="13" y="13" width="9" height="8" fill="#1f2232" stroke="#444a68" stroke-width="1"/>
+  <g fill="#ff5c6c">
+    <rect x="15" y="5" width="2" height="1"/><rect x="18" y="5" width="2" height="1"/><rect x="15" y="6" width="5" height="2"/><rect x="16" y="8" width="3" height="1"/><rect x="17" y="9" width="1" height="1"/>
+    <rect x="4" y="15" width="2" height="1"/><rect x="7" y="15" width="2" height="1"/><rect x="4" y="16" width="5" height="2"/><rect x="5" y="18" width="3" height="1"/><rect x="6" y="19" width="1" height="1"/>
+  </g>
+</svg>

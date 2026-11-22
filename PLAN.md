@@ -143,6 +143,7 @@ Update when a decision changes. Dates are when it was made.
 | Decision | Current baseline | Revisit when |
 |---|---|---|
 | Theme (2026-10-25) | Modern dark app with pixel-art accents (pixel font for titles, pixel game icons); replaces the green LCD look | Player feedback |
+| More games (2026-11-22) | Five more before the soft launch, cheapest first: **Pairs** (Pairs II), **Plunge** (Rapid Roll), **Wallbreak** (BrickBreaker), **Pop Shot** (Bubble Bash), **Seeds** (Bantumi). Each with a daily and a leaderboard. Departs from the scope test's "no more than three before the share loop is measured" — your call, made knowingly. Trials (Gravity Defied) after launch | Soft-launch data |
 | Launch lineup (2026-10-25) | Coil (snake), Star Raid (shooter), Rebound (ball platformer), all before launch | Soft-launch data |
 | Star Raid orientation (2026-10-25) | Vertical scrolling in portrait (Space Impact scrolled sideways) — the app is held upright | Players ask for landscape |
 | Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |

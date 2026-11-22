@@ -240,9 +240,9 @@ var DIRS = {
 	r: "right"
 };
 /** The most steps a run can take: every cell twice over is far beyond a perfect game. */
-var MAX_STEPS$2 = 13200;
+var MAX_STEPS$3 = 13200;
 var MAX_TURNS = 2e4;
-function isReplay$2(value) {
+function isReplay$3(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, turns } = value;
 	if (v !== 1 || !Array.isArray(turns) || turns.length > MAX_TURNS) return false;
@@ -250,20 +250,20 @@ function isReplay$2(value) {
 	for (const turn of turns) {
 		if (!Array.isArray(turn) || turn.length !== 2) return false;
 		const [at, dir] = turn;
-		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$2) return false;
+		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$3) return false;
 		if (typeof dir !== "string" || !(dir in DIRS)) return false;
 		previous = at;
 	}
 	return true;
 }
-var replayRun$2 = (random, replay) => {
-	if (!isReplay$2(replay)) return {
+var replayRun$3 = (random, replay) => {
+	if (!isReplay$3(replay)) return {
 		ok: false,
 		reason: "not a Coil replay"
 	};
 	let state = createCoil(random, 15, 22);
 	let next = 0;
-	for (let taken = 0; taken <= MAX_STEPS$2; taken++) {
+	for (let taken = 0; taken <= MAX_STEPS$3; taken++) {
 		for (let turn = replay.turns[next]; turn && turn[0] === taken; turn = replay.turns[next]) {
 			const dir = DIRS[turn[1]];
 			if (dir) state = queueTurn(state, dir);
@@ -271,6 +271,236 @@ var replayRun$2 = (random, replay) => {
 		}
 		state = step(state, random).state;
 		if (!state.alive) return next === replay.turns.length ? {
+			ok: true,
+			score: state.score
+		} : {
+			ok: false,
+			reason: "inputs after the run ended"
+		};
+	}
+	return {
+		ok: false,
+		reason: "the run never ended"
+	};
+};
+// src/games/pairs/logic/pairs.ts
+/**
+* Pairs' rules: a fixed-step simulation with no Phaser in it. The scene calls tick() 60 times
+* per simulated second with the card the player tapped (if any), so a run depends only on the
+* seed and which card was tapped when.
+*
+* Cards are numbered in reading order: index = row * cols + col.
+*/
+var STEP_MS$2 = 1e3 / 60;
+/** Board sizes in play order; after the last, it repeats. */
+var BOARDS = [
+	{
+		cols: 4,
+		rows: 4
+	},
+	{
+		cols: 4,
+		rows: 5
+	},
+	{
+		cols: 5,
+		rows: 6
+	},
+	{
+		cols: 6,
+		rows: 6
+	}
+];
+var START_MS = 6e4;
+/** The clock never shows more than this. */
+var MAX_MS = 99e3;
+/**
+* Only clearing a board adds time, and less each board: 10 s, 8, 6, 4, then 2 s for good. With a
+* second for every pair found (the first version), a player with a good memory gained time
+* faster than they spent it, and a run never ended.
+*/
+function clearBonusMs(board) {
+	return Math.max(2e3, 12e3 - 2e3 * board);
+}
+function boardSize(board) {
+	const size = BOARDS[Math.min(board, BOARDS.length) - 1];
+	if (!size) throw new Error(`Pairs: no board ${board}`);
+	return size;
+}
+/** Fisher–Yates with the seeded generator: always length − 1 draws. */
+function shuffle(items, random) {
+	for (let i = items.length - 1; i > 0; i--) {
+		const j = Math.floor(random() * (i + 1));
+		[items[i], items[j]] = [items[j], items[i]];
+	}
+	return items;
+}
+/**
+* Deals board `board`: picks its symbols from all SYMBOLS, then lays out two of each. The number
+* of draws depends only on the board's size, so the n-th board of a seed is the same however
+* the player did on the ones before.
+*/
+function deal(state, board, random) {
+	const { cols, rows } = boardSize(board);
+	const symbols = shuffle(Array.from({ length: 18 }, (_, i) => i), random).slice(0, cols * rows / 2);
+	const faces = shuffle([...symbols, ...symbols], random);
+	state.board = board;
+	state.cols = cols;
+	state.rows = rows;
+	state.cards = faces.map((symbol) => ({
+		symbol,
+		face: "down"
+	}));
+	state.first = null;
+	state.wrong = null;
+	state.nextBoardAtMs = null;
+}
+function createPairs(random) {
+	const state = {
+		timeMs: 0,
+		leftMs: START_MS,
+		board: 0,
+		cols: 0,
+		rows: 0,
+		cards: [],
+		first: null,
+		wrong: null,
+		wrongUntilMs: 0,
+		nextBoardAtMs: null,
+		score: 0,
+		streak: 0,
+		pairs: 0,
+		over: false,
+		lastTurnMs: Number.NEGATIVE_INFINITY
+	};
+	deal(state, 1, random);
+	return state;
+}
+function hideWrong(state, events) {
+	if (!state.wrong) return;
+	for (const i of state.wrong) {
+		const card = state.cards[i];
+		if (card) card.face = "down";
+	}
+	events.push({
+		type: "hide",
+		cards: state.wrong
+	});
+	state.wrong = null;
+}
+/**
+* Whether a tap at `atMs` may turn a card: a board is in play and the last turn was long enough
+* ago. The scene asks for the coming step, and holds a tap until then rather than lose it.
+*/
+function canTurn(state, atMs = state.timeMs) {
+	return !state.over && state.nextBoardAtMs === null && atMs - state.lastTurnMs >= 150;
+}
+function turn(state, index, events) {
+	const card = state.cards[index];
+	if (!card || card.face !== "down" || !canTurn(state)) return;
+	state.lastTurnMs = state.timeMs;
+	hideWrong(state, events);
+	card.face = "up";
+	events.push({
+		type: "flip",
+		card: index
+	});
+	const firstIndex = state.first;
+	if (firstIndex === null) {
+		state.first = index;
+		return;
+	}
+	state.first = null;
+	const first = state.cards[firstIndex];
+	if (!first) return;
+	if (first.symbol !== card.symbol) {
+		state.streak = 0;
+		state.wrong = [firstIndex, index];
+		state.wrongUntilMs = state.timeMs + 700;
+		events.push({
+			type: "miss",
+			cards: [firstIndex, index]
+		});
+		return;
+	}
+	first.face = "matched";
+	card.face = "matched";
+	state.streak += 1;
+	state.pairs += 1;
+	state.score += 10 * Math.min(state.streak, 5);
+	events.push({
+		type: "match",
+		cards: [firstIndex, index],
+		streak: state.streak
+	});
+	if (state.cards.every((c) => c.face === "matched")) {
+		const points = 50 * state.board;
+		state.score += points;
+		state.leftMs = Math.min(MAX_MS, state.leftMs + clearBonusMs(state.board));
+		state.nextBoardAtMs = state.timeMs + 900;
+		events.push({
+			type: "clear",
+			board: state.board,
+			points
+		});
+	}
+}
+/** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
+function tick$2(state, input, random) {
+	if (state.over) return [];
+	const events = [];
+	state.timeMs += STEP_MS$2;
+	if (state.nextBoardAtMs !== null) {
+		if (state.timeMs >= state.nextBoardAtMs) {
+			deal(state, state.board + 1, random);
+			events.push({
+				type: "board",
+				board: state.board
+			});
+		}
+		return events;
+	}
+	state.leftMs -= STEP_MS$2;
+	if (state.leftMs <= 0) {
+		state.leftMs = 0;
+		state.over = true;
+		return [{ type: "over" }];
+	}
+	if (state.wrong && state.timeMs >= state.wrongUntilMs) hideWrong(state, events);
+	if (input.tap !== null) turn(state, input.tap, events);
+	return events;
+}
+// src/games/pairs/verify.ts
+/** The longest run accepted: 30 minutes of steps (the clock alone caps a run near 99 s plus bonuses). */
+var MAX_STEPS$2 = 108e3;
+var MAX_CARD = 36;
+function isReplay$2(value) {
+	if (typeof value !== "object" || value === null) return false;
+	const { v, taps } = value;
+	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$2) return false;
+	let previous = 0;
+	for (const tap of taps) {
+		if (!Array.isArray(tap) || tap.length !== 2) return false;
+		const [step, card] = tap;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$2) return false;
+		if (!Number.isInteger(card) || card < 0 || card >= MAX_CARD) return false;
+		previous = step;
+	}
+	return true;
+}
+var replayRun$2 = (random, replay) => {
+	if (!isReplay$2(replay)) return {
+		ok: false,
+		reason: "not a Pairs replay"
+	};
+	const state = createPairs(random);
+	let next = 0;
+	for (let step = 1; step <= MAX_STEPS$2; step++) {
+		const tap = replay.taps[next];
+		const card = tap && tap[0] === step ? tap[1] : null;
+		if (card !== null) next += 1;
+		tick$2(state, { tap: card }, random);
+		if (state.over) return next === replay.taps.length ? {
 			ok: true,
 			score: state.score
 		} : {
@@ -978,8 +1208,9 @@ function cleanNickname(raw) {
 */
 var BOARD_GAMES = {
 	skyline: replayRun$1,
-	coil: replayRun$2,
-	"star-raid": replayRun
+	coil: replayRun$3,
+	"star-raid": replayRun,
+	pairs: replayRun$2
 };
 var KEEP_DAYS = 8;
 /**
