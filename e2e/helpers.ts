@@ -10,6 +10,7 @@ export const GAME_IDS = [
   'pairs',
   'plunge',
   'wallbreak',
+  'pop-shot',
   'prototype',
 ] as const;
 import { DB_NAME } from '../src/appInfo';

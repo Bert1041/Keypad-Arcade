@@ -240,9 +240,9 @@ var DIRS = {
 	r: "right"
 };
 /** The most steps a run can take: every cell twice over is far beyond a perfect game. */
-var MAX_STEPS$5 = 13200;
+var MAX_STEPS$6 = 13200;
 var MAX_TURNS = 2e4;
-function isReplay$5(value) {
+function isReplay$6(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, turns } = value;
 	if (v !== 1 || !Array.isArray(turns) || turns.length > MAX_TURNS) return false;
@@ -250,20 +250,20 @@ function isReplay$5(value) {
 	for (const turn of turns) {
 		if (!Array.isArray(turn) || turn.length !== 2) return false;
 		const [at, dir] = turn;
-		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$5) return false;
+		if (!Number.isInteger(at) || at < previous || at > MAX_STEPS$6) return false;
 		if (typeof dir !== "string" || !(dir in DIRS)) return false;
 		previous = at;
 	}
 	return true;
 }
-var replayRun$5 = (random, replay) => {
-	if (!isReplay$5(replay)) return {
+var replayRun$6 = (random, replay) => {
+	if (!isReplay$6(replay)) return {
 		ok: false,
 		reason: "not a Coil replay"
 	};
 	let state = createCoil(random, 15, 22);
 	let next = 0;
-	for (let taken = 0; taken <= MAX_STEPS$5; taken++) {
+	for (let taken = 0; taken <= MAX_STEPS$6; taken++) {
 		for (let turn = replay.turns[next]; turn && turn[0] === taken; turn = replay.turns[next]) {
 			const dir = DIRS[turn[1]];
 			if (dir) state = queueTurn(state, dir);
@@ -291,7 +291,7 @@ var replayRun$5 = (random, replay) => {
 *
 * Cards are numbered in reading order: index = row * cols + col.
 */
-var STEP_MS$4 = 1e3 / 60;
+var STEP_MS$5 = 1e3 / 60;
 /** Board sizes in play order; after the last, it repeats. */
 var BOARDS = [
 	{
@@ -446,10 +446,10 @@ function turn(state, index, events) {
 	}
 }
 /** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
-function tick$4(state, input, random) {
+function tick$5(state, input, random) {
 	if (state.over) return [];
 	const events = [];
-	state.timeMs += STEP_MS$4;
+	state.timeMs += STEP_MS$5;
 	if (state.nextBoardAtMs !== null) {
 		if (state.timeMs >= state.nextBoardAtMs) {
 			deal(state, state.board + 1, random);
@@ -460,7 +460,7 @@ function tick$4(state, input, random) {
 		}
 		return events;
 	}
-	state.leftMs -= STEP_MS$4;
+	state.leftMs -= STEP_MS$5;
 	if (state.leftMs <= 0) {
 		state.leftMs = 0;
 		state.over = true;
@@ -472,34 +472,34 @@ function tick$4(state, input, random) {
 }
 // src/games/pairs/verify.ts
 /** The longest run accepted: 30 minutes of steps (the clock alone caps a run near 99 s plus bonuses). */
-var MAX_STEPS$4 = 108e3;
+var MAX_STEPS$5 = 108e3;
 var MAX_CARD = 36;
-function isReplay$4(value) {
+function isReplay$5(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, taps } = value;
-	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$4) return false;
+	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$5) return false;
 	let previous = 0;
 	for (const tap of taps) {
 		if (!Array.isArray(tap) || tap.length !== 2) return false;
 		const [step, card] = tap;
-		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$4) return false;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$5) return false;
 		if (!Number.isInteger(card) || card < 0 || card >= MAX_CARD) return false;
 		previous = step;
 	}
 	return true;
 }
-var replayRun$4 = (random, replay) => {
-	if (!isReplay$4(replay)) return {
+var replayRun$5 = (random, replay) => {
+	if (!isReplay$5(replay)) return {
 		ok: false,
 		reason: "not a Pairs replay"
 	};
 	const state = createPairs(random);
 	let next = 0;
-	for (let step = 1; step <= MAX_STEPS$4; step++) {
+	for (let step = 1; step <= MAX_STEPS$5; step++) {
 		const tap = replay.taps[next];
 		const card = tap && tap[0] === step ? tap[1] : null;
 		if (card !== null) next += 1;
-		tick$4(state, { tap: card }, random);
+		tick$5(state, { tap: card }, random);
 		if (state.over) return next === replay.taps.length ? {
 			ok: true,
 			score: state.score
@@ -521,13 +521,13 @@ var replayRun$4 = (random, replay) => {
 *
 * World px, y downwards. Platforms rise from below the screen towards the spikes at the top.
 */
-var STEP_MS$3 = 1e3 / 60;
+var STEP_MS$4 = 1e3 / 60;
 var GRAVITY$1 = 1400;
 var MIN_W = 72;
 var RISE_GAIN = .8;
 var SPIKE_CHANCE = .18;
 var LIFE_CHANCE = .025;
-var NO_INPUT$2 = { axis: 0 };
+var NO_INPUT$3 = { axis: 0 };
 function riseSpeed(playedMs) {
 	return 70 + RISE_GAIN * playedMs / 1e3;
 }
@@ -633,10 +633,10 @@ function loseLife(state, cause) {
 	return events;
 }
 /** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
-function tick$3(state, input, random) {
+function tick$4(state, input, random) {
 	if (state.over) return [];
-	state.timeMs += STEP_MS$3;
-	const dt = STEP_MS$3 / 1e3;
+	state.timeMs += STEP_MS$4;
+	const dt = STEP_MS$4 / 1e3;
 	if (state.respawnAtMs !== null) {
 		if (state.timeMs < state.respawnAtMs) return [];
 		state.respawnAtMs = null;
@@ -644,8 +644,8 @@ function tick$3(state, input, random) {
 		return [{ type: "respawn" }];
 	}
 	const events = [];
-	state.playedMs += STEP_MS$3;
-	state.pointsMs += STEP_MS$3;
+	state.playedMs += STEP_MS$4;
+	state.pointsMs += STEP_MS$4;
 	const per = 100;
 	while (state.pointsMs >= per) {
 		state.pointsMs -= per;
@@ -699,17 +699,411 @@ function tick$3(state, input, random) {
 }
 // src/games/plunge/verify.ts
 /** The longest run accepted: 30 minutes of steps (the shaft outruns any ball after ~10). */
+var MAX_STEPS$4 = 108e3;
+function isReplay$4(value) {
+	if (typeof value !== "object" || value === null) return false;
+	const { v, input } = value;
+	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$4) return false;
+	let previous = 0;
+	for (const change of input) {
+		if (!Array.isArray(change) || change.length !== 2) return false;
+		const [step, axis] = change;
+		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$4) return false;
+		if (axis !== -1 && axis !== 0 && axis !== 1) return false;
+		previous = step;
+	}
+	return true;
+}
+var replayRun$4 = (random, replay) => {
+	if (!isReplay$4(replay)) return {
+		ok: false,
+		reason: "not a Plunge replay"
+	};
+	const state = createPlunge(random);
+	let input = NO_INPUT$3;
+	let next = 0;
+	for (let step = 1; step <= MAX_STEPS$4; step++) {
+		const change = replay.input[next];
+		if (change && change[0] === step) {
+			input = { axis: change[1] };
+			next += 1;
+		}
+		tick$4(state, input, random);
+		if (state.over) return next === replay.input.length ? {
+			ok: true,
+			score: state.score
+		} : {
+			ok: false,
+			reason: "inputs after the run ended"
+		};
+	}
+	return {
+		ok: false,
+		reason: "the run never ended"
+	};
+};
+// src/games/pop-shot/logic/popShot.ts
+/**
+* Pop Shot's rules: a fixed-step simulation with no Phaser in it. The scene calls tick() 60 times
+* per simulated second with where the player is aiming and whether they fired, so a run depends
+* only on the seed and those inputs.
+*
+* World px, y downwards. Bubbles sit on a hex grid hanging from the ceiling: rows of 10 and 9
+* alternate, the rows of 9 shifted half a bubble right. Only + − × ÷, Math.sqrt and rounding are
+* used, which every engine computes alike (the leaderboard replays runs in Node).
+*/
+var STEP_MS$3 = 1e3 / 60;
+var D = 36;
+/** How far a shot moves each step. */
+var SHOT_STEP = 1100 * STEP_MS$3 / 1e3;
+/** The shot's upward share never drops below this, so it cannot be fired flat along the floor. */
+var MIN_UP = .2;
+/** Straight up, not firing. */
+var NO_INPUT$2 = {
+	aimX: 180,
+	aimY: 348,
+	fire: false
+};
+/** Shots per new row: 8 at first, one fewer every 4 rows, down to one. */
+function shotsPerRow(pushes) {
+	return Math.max(1, 8 - Math.floor(pushes / 4));
+}
+function activeColours(pushes) {
+	return Math.min(6, 4 + Math.floor(pushes / 6));
+}
+/** Rows of 9 are shifted half a bubble right; which rows they are flips with every push. */
+function isShifted(state, row) {
+	return ((row - state.pushes) % 2 + 2) % 2 === 1;
+}
+function rowLength(state, row) {
+	return isShifted(state, row) ? 9 : 10;
+}
+function cellCentre(state, row, col) {
+	return {
+		x: 18 + col * D + (isShifted(state, row) ? 18 : 0),
+		y: 70 + row * 31
+	};
+}
+function get(state, row, col) {
+	return state.grid[row]?.[col] ?? null;
+}
+function set(state, row, col, value) {
+	while (state.grid.length <= row) state.grid.push(new Array(10).fill(null));
+	const cells = state.grid[row];
+	if (cells) cells[col] = value;
+}
+/** The up-to-six cells touching one, on the board. */
+function neighbours(state, row, col) {
+	const lean = isShifted(state, row) ? 0 : -1;
+	const out = [];
+	const add = (r, c) => {
+		if (r >= 0 && c >= 0 && c < rowLength(state, r)) out.push([r, c]);
+	};
+	add(row, col - 1);
+	add(row, col + 1);
+	for (const r of [row - 1, row + 1]) {
+		add(r, col + lean);
+		add(r, col + lean + 1);
+	}
+	return out;
+}
+function bubbles(state, cells) {
+	return cells.map(([row, col]) => ({
+		...cellCentre(state, row, col),
+		colour: get(state, row, col) ?? 0
+	}));
+}
+/** The colours on the board, lowest first. */
+function present(state) {
+	const seen = /* @__PURE__ */ new Set();
+	for (const cells of state.grid) for (const c of cells) if (c !== null) seen.add(c);
+	return [...seen].sort((a, b) => a - b);
+}
+/** The colour a roll deals: one of those still on the board (any, on an empty board). */
+function colourFor(state, roll) {
+	const colours = present(state);
+	if (colours.length === 0) return Math.floor(roll * activeColours(state.pushes));
+	return colours[Math.floor(roll * colours.length)] ?? 0;
+}
+/**
+* Pushes a new row in at the top, moving every row down one. Always draws COLS numbers, so the
+* n-th row of a seed is the same for everyone however their board looks.
+*/
+function pushRow(state, random) {
+	state.pushes += 1;
+	const colours = activeColours(state.pushes);
+	const cells = new Array(10).fill(null);
+	const length = rowLength(state, 0);
+	for (let col = 0; col < 10; col++) {
+		const roll = random();
+		if (col < length) cells[col] = Math.floor(roll * colours);
+	}
+	state.grid.unshift(cells);
+}
+function createPopShot(random) {
+	const state = {
+		timeMs: 0,
+		grid: [],
+		pushes: 0,
+		shotsSinceRow: 0,
+		current: 0,
+		next: 0,
+		aim: {
+			x: NO_INPUT$2.aimX,
+			y: NO_INPUT$2.aimY
+		},
+		shot: null,
+		readyAtMs: 0,
+		score: 0,
+		over: false
+	};
+	for (let row = 0; row < 5; row++) for (let col = 0; col < 10; col++) {
+		const roll = random();
+		if (col < rowLength(state, row)) set(state, row, col, Math.floor(roll * 4));
+	}
+	state.current = random();
+	state.next = random();
+	return state;
+}
+/** The unit direction a shot takes towards an aim point, never flatter than MIN_UP. */
+function aimDirection(aim) {
+	const vx = aim.x - 180;
+	const vy = aim.y - 548;
+	const length = Math.sqrt(vx * vx + vy * vy);
+	if (length === 0 || vx === 0 && vy >= 0) return {
+		dx: 0,
+		dy: -1
+	};
+	const dx = vx / length;
+	const dy = vy / length;
+	if (dy <= -.2) return {
+		dx,
+		dy
+	};
+	return {
+		dx: (vx < 0 ? -1 : 1) * Math.sqrt(1 - MIN_UP * MIN_UP),
+		dy: -.2
+	};
+}
+/** True if a bubble at (x, y) touches the ceiling or a bubble on the board. */
+function touching(state, x, y) {
+	if (y - 18 <= 52) return true;
+	const near = Math.floor((y - 52 - 18) / 31);
+	for (let row = Math.max(0, near - 1); row <= near + 2 && row < state.grid.length; row++) for (let col = 0; col < 10; col++) {
+		if (get(state, row, col) === null) continue;
+		const c = cellCentre(state, row, col);
+		const ex = c.x - x;
+		const ey = c.y - y;
+		if (ex * ex + ey * ey < 900) return true;
+	}
+	return false;
+}
+/**
+* Moves a flying bubble up to `distance`, in steps of at most 4 px, bouncing off the side walls.
+* Stops where it first touches something.
+*/
+function moveShot(state, shot, distance) {
+	const parts = Math.max(1, Math.ceil(distance / 4));
+	const step = distance / parts;
+	let bounces = 0;
+	for (let i = 0; i < parts; i++) {
+		shot.x += shot.dx * step;
+		shot.y += shot.dy * step;
+		if (shot.x < 18 || shot.x > 342) {
+			shot.x = shot.x < 18 ? 36 - shot.x : 684 - shot.x;
+			shot.dx = -shot.dx;
+			bounces += 1;
+		}
+		if (touching(state, shot.x, shot.y)) {
+			shot.y = Math.max(shot.y, 70);
+			return {
+				stuck: true,
+				bounces
+			};
+		}
+	}
+	return {
+		stuck: false,
+		bounces
+	};
+}
+/**
+* The empty cell a stuck bubble settles in: the nearest one hanging from the ceiling or a bubble.
+* While COLLIDE < 2R the nearest empty cell to where a shot stops is always beside a bubble, so
+* the `hangs` test never changes the answer (a mutation test confirms it); it stays so a change
+* of COLLIDE can never leave a bubble floating.
+*/
+function snapCell(state, x, y) {
+	let best = null;
+	let bestDistance = Infinity;
+	for (let row = 0; row <= state.grid.length; row++) for (let col = 0; col < rowLength(state, row); col++) {
+		if (get(state, row, col) !== null) continue;
+		if (!(row === 0 || neighbours(state, row, col).some(([r, c]) => get(state, r, c) !== null))) continue;
+		const c = cellCentre(state, row, col);
+		const distance = (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y);
+		if (distance < bestDistance) {
+			bestDistance = distance;
+			best = [row, col];
+		}
+	}
+	if (!best) throw new Error("Pop Shot: nowhere for the bubble to settle");
+	return best;
+}
+/** The cells joined to (row, col) through cells of the same colour, including it. */
+function sameColourGroup(state, row, col) {
+	const colour = get(state, row, col);
+	if (colour === null) return [];
+	const seen = /* @__PURE__ */ new Set([`${row},${col}`]);
+	const group = [[row, col]];
+	for (let i = 0; i < group.length; i++) {
+		const [r, c] = group[i] ?? [0, 0];
+		for (const [nr, nc] of neighbours(state, r, c)) {
+			const key = `${nr},${nc}`;
+			if (seen.has(key) || get(state, nr, nc) !== colour) continue;
+			seen.add(key);
+			group.push([nr, nc]);
+		}
+	}
+	return group;
+}
+/** Bubbles no longer joined to the ceiling through other bubbles. */
+function looseCells(state) {
+	const held = /* @__PURE__ */ new Set();
+	const queue = [];
+	for (let col = 0; col < 10; col++) if (get(state, 0, col) !== null) {
+		held.add(`0,${col}`);
+		queue.push([0, col]);
+	}
+	for (let i = 0; i < queue.length; i++) {
+		const [r, c] = queue[i] ?? [0, 0];
+		for (const [nr, nc] of neighbours(state, r, c)) {
+			const key = `${nr},${nc}`;
+			if (held.has(key) || get(state, nr, nc) === null) continue;
+			held.add(key);
+			queue.push([nr, nc]);
+		}
+	}
+	const loose = [];
+	state.grid.forEach((cells, row) => {
+		cells.forEach((cell, col) => {
+			if (cell !== null && !held.has(`${row},${col}`)) loose.push([row, col]);
+		});
+	});
+	return loose;
+}
+function isEmpty(state) {
+	return state.grid.every((cells) => cells.every((c) => c === null));
+}
+function fire(state, auto, random, events) {
+	state.shot = {
+		x: 180,
+		y: 548,
+		...aimDirection(state.aim),
+		colour: colourFor(state, state.current)
+	};
+	state.current = state.next;
+	state.next = random();
+	events.push({
+		type: "fire",
+		auto
+	});
+}
+/** Settles the shot: pops a group of MATCH or more, drops what came loose, then the pressure. */
+function land$1(state, shot, random, events) {
+	state.shot = null;
+	const [row, col] = snapCell(state, shot.x, shot.y);
+	set(state, row, col, shot.colour);
+	events.push({
+		type: "stick",
+		bubble: {
+			...cellCentre(state, row, col),
+			colour: shot.colour
+		}
+	});
+	const group = sameColourGroup(state, row, col);
+	if (group.length >= 3) {
+		const points = 10 * group.length;
+		events.push({
+			type: "pop",
+			bubbles: bubbles(state, group),
+			points
+		});
+		for (const [r, c] of group) set(state, r, c, null);
+		state.score += points;
+		const loose = looseCells(state);
+		if (loose.length > 0) {
+			const dropPoints = 20 * loose.length;
+			events.push({
+				type: "drop",
+				bubbles: bubbles(state, loose),
+				points: dropPoints
+			});
+			for (const [r, c] of loose) set(state, r, c, null);
+			state.score += dropPoints;
+		}
+	}
+	if (isEmpty(state)) {
+		state.grid = [];
+		state.score += 500;
+		events.push({
+			type: "clear",
+			points: 500
+		});
+		for (let i = 0; i < 4; i++) pushRow(state, random);
+		state.shotsSinceRow = 0;
+		events.push({ type: "row" });
+	} else {
+		state.shotsSinceRow += 1;
+		if (state.shotsSinceRow >= shotsPerRow(state.pushes)) {
+			pushRow(state, random);
+			state.shotsSinceRow = 0;
+			events.push({ type: "row" });
+		}
+	}
+	while (state.grid.length > 0 && (state.grid.at(-1) ?? []).every((c) => c === null)) state.grid.pop();
+	if (state.grid.length > 14) {
+		state.over = true;
+		events.push({ type: "over" });
+		return;
+	}
+	state.readyAtMs = state.timeMs;
+}
+/** Advances one step. Mutates `state`; returns what happened, for sound and effects. */
+function tick$3(state, input, random) {
+	if (state.over) return [];
+	state.timeMs += STEP_MS$3;
+	state.aim = {
+		x: input.aimX,
+		y: input.aimY
+	};
+	const events = [];
+	if (!state.shot) {
+		if (input.fire) fire(state, false, random, events);
+		else if (state.timeMs - state.readyAtMs >= 8e3) fire(state, true, random, events);
+	}
+	const shot = state.shot;
+	if (shot) {
+		const moved = moveShot(state, shot, SHOT_STEP);
+		for (let i = 0; i < moved.bounces; i++) events.push({ type: "bounce" });
+		if (moved.stuck) land$1(state, shot, random, events);
+	}
+	return events;
+}
+// src/games/pop-shot/verify.ts
+/** The longest run accepted: 30 minutes of steps. */
 var MAX_STEPS$3 = 108e3;
+var MAX_AIM = 5e3;
+var isAim = (n) => Number.isInteger(n) && Math.abs(n) <= MAX_AIM;
 function isReplay$3(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, input } = value;
 	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$3) return false;
 	let previous = 0;
 	for (const change of input) {
-		if (!Array.isArray(change) || change.length !== 2) return false;
-		const [step, axis] = change;
+		if (!Array.isArray(change) || change.length !== 4) return false;
+		const [step, aimX, aimY, fire] = change;
 		if (!Number.isInteger(step) || step <= previous || step > MAX_STEPS$3) return false;
-		if (axis !== -1 && axis !== 0 && axis !== 1) return false;
+		if (!isAim(aimX) || !isAim(aimY) || fire !== 0 && fire !== 1) return false;
 		previous = step;
 	}
 	return true;
@@ -717,15 +1111,19 @@ function isReplay$3(value) {
 var replayRun$3 = (random, replay) => {
 	if (!isReplay$3(replay)) return {
 		ok: false,
-		reason: "not a Plunge replay"
+		reason: "not a Pop Shot replay"
 	};
-	const state = createPlunge(random);
+	const state = createPopShot(random);
 	let input = NO_INPUT$2;
 	let next = 0;
 	for (let step = 1; step <= MAX_STEPS$3; step++) {
 		const change = replay.input[next];
 		if (change && change[0] === step) {
-			input = { axis: change[1] };
+			input = {
+				aimX: change[1],
+				aimY: change[2],
+				fire: change[3] === 1
+			};
 			next += 1;
 		}
 		tick$3(state, input, random);
@@ -1804,11 +2202,12 @@ function cleanNickname(raw) {
 */
 var BOARD_GAMES = {
 	skyline: replayRun$1,
-	coil: replayRun$5,
+	coil: replayRun$6,
 	"star-raid": replayRun,
-	pairs: replayRun$4,
-	plunge: replayRun$3,
-	wallbreak: replayRun$2
+	pairs: replayRun$5,
+	plunge: replayRun$4,
+	wallbreak: replayRun$2,
+	"pop-shot": replayRun$3
 };
 var KEEP_DAYS = 8;
 /**

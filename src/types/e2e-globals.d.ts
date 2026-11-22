@@ -55,6 +55,16 @@ declare global {
       paddleX: number;
       balls: { x: number; y: number }[];
     };
+    /** Pop Shot: a read-only look at the run. */
+    __POP_SHOT_DEBUG__?: () => {
+      started: boolean;
+      over: boolean;
+      score: number;
+      shots: number;
+      pushes: number;
+      flying: boolean;
+      rows: string[];
+    };
     /** Skyline: a read-only look at the run. */
     __SKYLINE_DEBUG__?: () => {
       started: boolean;
