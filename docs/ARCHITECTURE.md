@@ -180,7 +180,8 @@ The offline e2e test proves a game that was never opened online still starts off
 
 ## 7a. Daily leaderboards
 
-One board per game with a daily (Coil, Star Raid, Skyline), per UTC day. Players have no
+One board per game with a daily (Skyline, Coil, Star Raid, Pairs, Plunge, Wallbreak, Pop Shot,
+Seeds), per UTC day. Players have no
 account: a random 256-bit secret on the device (only a hash of it is stored, neither is ever
 returned) and a 3–12 character nickname (`server/nickname.ts`).
 
@@ -268,6 +269,7 @@ Habits:
 | Sharing could fail on iPhone and in WhatsApp's in-app browser | The score card was drawn after the tap, and browsers (Safari strictly) open a share sheet only from inside one; when both share sheet and clipboard were unavailable the player got "Couldn't share" and a dead end | The card is drawn when the run ends, so the tap shares at once (e2e checks the share starts inside the tap); a failed share shows the message to copy by hand |
 | A friend's daily link from yesterday offered "Post", which the server refused | The app offered Post for any daily; only the server knew the date rule | One `postableDates()` in core, used by both; Post is decided when the run ends |
 | Skyline felt buggy: a floor dropped when it looked lined up missed | Floors kept the swing's full speed and drifted ~37 px; the fairness tests proved a landing window existed, not that it was where a player looks | Floors keep 15% of it; a test at every stage and an e2e test that taps on the frame a floor is drawn lined up |
+| Pop Shot's aim guide pointed at a different cell from where the shot landed | The guide traced in 4 px steps; a real shot moves ~18 px a frame in ~3.7 px sub-steps, so it stopped at a slightly different point and snapped elsewhere | The guide is drawn from `shotPath()`, which moves exactly as `tick()` does; a test compares it with a fired shot step for step |
 
 ## 10. Adding a game: checklist
 

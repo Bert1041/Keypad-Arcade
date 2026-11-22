@@ -18,6 +18,7 @@ export type GameId =
   | 'plunge'
   | 'wallbreak'
   | 'pop-shot'
+  | 'seeds'
   | 'prototype';
 
 export type Orientation = 'portrait' | 'landscape' | 'any';

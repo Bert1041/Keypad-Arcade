@@ -149,7 +149,7 @@ Update when a decision changes. Dates are when it was made.
 | Name (2026-10-25) | Keypad Arcade. Domain/trademark **not checked** | Before buying a domain |
 | Games (2026-10-25) | Neutral retro remakes, original names/art/levels | Phase 0 polls disagree |
 | Sharing (2026-10-25) | Client-only: share card + seeded challenge links | — |
-| Leaderboards (2026-10-25) | **Global daily boards** per game (Coil, Star Raid, Skyline — the games with a daily); nickname, no account. Every posted run is **replayed on the server** from its seed and inputs, and only the server's score is stored. Rebound has no daily, so no board | Players ask for all-time boards |
+| Leaderboards (2026-10-25) | **Global daily boards** per game with a daily (Skyline, Coil, Star Raid, Pairs, Plunge, Wallbreak, Pop Shot, Seeds); nickname, no account. Every posted run is **replayed on the server** from its seed and inputs, and only the server's score is stored. Rebound has no daily, so no board | Players ask for all-time boards |
 | Backend (2026-10-25) | **Vercel Functions + Upstash Redis** (from Vercel's marketplace), for the leaderboards only. Scores and settings stay on the device. Replaces "none yet"; the Hunt can build on it later | Costs beyond the free tier |
 | Analytics (2026-10-25) | Yes, privacy-respecting; **provider not chosen** | — |
 | Stack | React 19 + Phaser 3.90 + Vite 8 + TypeScript 6 + Dexie 4 + vite-plugin-pwa | — |

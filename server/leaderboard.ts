@@ -6,6 +6,7 @@ import { replayRun as replayCoil } from '../src/games/coil/verify';
 import { replayRun as replayPairs } from '../src/games/pairs/verify';
 import { replayRun as replayPlunge } from '../src/games/plunge/verify';
 import { replayRun as replayPopShot } from '../src/games/pop-shot/verify';
+import { replayRun as replaySeeds } from '../src/games/seeds/verify';
 import { replayRun as replayWallbreak } from '../src/games/wallbreak/verify';
 import { replayRun as replaySkyline } from '../src/games/skyline/verify';
 import { replayRun as replayStarRaid } from '../src/games/star-raid/verify';
@@ -27,6 +28,7 @@ export const BOARD_GAMES: Readonly<Record<string, ReplayRun>> = {
   plunge: replayPlunge,
   wallbreak: replayWallbreak,
   'pop-shot': replayPopShot,
+  seeds: replaySeeds,
 };
 
 export const TOP = 50;

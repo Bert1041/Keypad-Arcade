@@ -11,6 +11,7 @@ export const GAME_IDS = [
   'plunge',
   'wallbreak',
   'pop-shot',
+  'seeds',
   'prototype',
 ] as const;
 import { DB_NAME } from '../src/appInfo';

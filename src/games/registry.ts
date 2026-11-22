@@ -5,6 +5,7 @@ import { pairs } from './pairs';
 import { plunge } from './plunge';
 import { popShot } from './pop-shot';
 import { rebound } from './rebound';
+import { seeds } from './seeds';
 import { skyline } from './skyline';
 import { starRaid } from './star-raid';
 import { wallbreak } from './wallbreak';
@@ -26,6 +27,7 @@ export const games: readonly GameDefinition[] = [
   plunge,
   wallbreak,
   popShot,
+  seeds,
   ...(import.meta.env.DEV || import.meta.env.VITE_E2E === '1' ? [prototype] : []),
 ];
 

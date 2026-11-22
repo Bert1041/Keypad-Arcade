@@ -242,7 +242,7 @@ var DIRS = {
 /** The most steps a run can take: every cell twice over is far beyond a perfect game. */
 var MAX_STEPS$6 = 13200;
 var MAX_TURNS = 2e4;
-function isReplay$6(value) {
+function isReplay$7(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, turns } = value;
 	if (v !== 1 || !Array.isArray(turns) || turns.length > MAX_TURNS) return false;
@@ -256,8 +256,8 @@ function isReplay$6(value) {
 	}
 	return true;
 }
-var replayRun$6 = (random, replay) => {
-	if (!isReplay$6(replay)) return {
+var replayRun$7 = (random, replay) => {
+	if (!isReplay$7(replay)) return {
 		ok: false,
 		reason: "not a Coil replay"
 	};
@@ -340,7 +340,7 @@ function shuffle(items, random) {
 * of draws depends only on the board's size, so the n-th board of a seed is the same however
 * the player did on the ones before.
 */
-function deal(state, board, random) {
+function deal$1(state, board, random) {
 	const { cols, rows } = boardSize(board);
 	const symbols = shuffle(Array.from({ length: 18 }, (_, i) => i), random).slice(0, cols * rows / 2);
 	const faces = shuffle([...symbols, ...symbols], random);
@@ -373,7 +373,7 @@ function createPairs(random) {
 		over: false,
 		lastTurnMs: Number.NEGATIVE_INFINITY
 	};
-	deal(state, 1, random);
+	deal$1(state, 1, random);
 	return state;
 }
 function hideWrong(state, events) {
@@ -452,7 +452,7 @@ function tick$5(state, input, random) {
 	state.timeMs += STEP_MS$5;
 	if (state.nextBoardAtMs !== null) {
 		if (state.timeMs >= state.nextBoardAtMs) {
-			deal(state, state.board + 1, random);
+			deal$1(state, state.board + 1, random);
 			events.push({
 				type: "board",
 				board: state.board
@@ -474,7 +474,7 @@ function tick$5(state, input, random) {
 /** The longest run accepted: 30 minutes of steps (the clock alone caps a run near 99 s plus bonuses). */
 var MAX_STEPS$5 = 108e3;
 var MAX_CARD = 36;
-function isReplay$5(value) {
+function isReplay$6(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, taps } = value;
 	if (v !== 1 || !Array.isArray(taps) || taps.length > MAX_STEPS$5) return false;
@@ -488,8 +488,8 @@ function isReplay$5(value) {
 	}
 	return true;
 }
-var replayRun$5 = (random, replay) => {
-	if (!isReplay$5(replay)) return {
+var replayRun$6 = (random, replay) => {
+	if (!isReplay$6(replay)) return {
 		ok: false,
 		reason: "not a Pairs replay"
 	};
@@ -700,7 +700,7 @@ function tick$4(state, input, random) {
 // src/games/plunge/verify.ts
 /** The longest run accepted: 30 minutes of steps (the shaft outruns any ball after ~10). */
 var MAX_STEPS$4 = 108e3;
-function isReplay$4(value) {
+function isReplay$5(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, input } = value;
 	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$4) return false;
@@ -714,8 +714,8 @@ function isReplay$4(value) {
 	}
 	return true;
 }
-var replayRun$4 = (random, replay) => {
-	if (!isReplay$4(replay)) return {
+var replayRun$5 = (random, replay) => {
+	if (!isReplay$5(replay)) return {
 		ok: false,
 		reason: "not a Plunge replay"
 	};
@@ -1094,7 +1094,7 @@ function tick$3(state, input, random) {
 var MAX_STEPS$3 = 108e3;
 var MAX_AIM = 5e3;
 var isAim = (n) => Number.isInteger(n) && Math.abs(n) <= MAX_AIM;
-function isReplay$3(value) {
+function isReplay$4(value) {
 	if (typeof value !== "object" || value === null) return false;
 	const { v, input } = value;
 	if (v !== 1 || !Array.isArray(input) || input.length > MAX_STEPS$3) return false;
@@ -1108,8 +1108,8 @@ function isReplay$3(value) {
 	}
 	return true;
 }
-var replayRun$3 = (random, replay) => {
-	if (!isReplay$3(replay)) return {
+var replayRun$4 = (random, replay) => {
+	if (!isReplay$4(replay)) return {
 		ok: false,
 		reason: "not a Pop Shot replay"
 	};
@@ -1138,6 +1138,287 @@ var replayRun$3 = (random, replay) => {
 	return {
 		ok: false,
 		reason: "the run never ended"
+	};
+};
+/**
+* How the phone plays each game: how far it looks ahead (its moves and yours), and how often it
+* instead plays a move at random.
+*/
+var LEVELS = [
+	{
+		depth: 1,
+		blunder: .35
+	},
+	{
+		depth: 2,
+		blunder: .2
+	},
+	{
+		depth: 4,
+		blunder: .1
+	},
+	{
+		depth: 6,
+		blunder: .04
+	},
+	{
+		depth: 8,
+		blunder: 0
+	}
+];
+var storeOf = (side) => side === "player" ? 6 : 13;
+var other = (side) => side === "player" ? "phone" : "player";
+var firstPit = (side) => side === "player" ? 0 : 7;
+function isOwnPit(side, place) {
+	const first = firstPit(side);
+	return place >= first && place < first + 6;
+}
+function legalMoves(board, side) {
+	const moves = [];
+	const first = firstPit(side);
+	for (let pit = first; pit < first + 6; pit++) if ((board[pit] ?? 0) > 0) moves.push(pit);
+	return moves;
+}
+var at = (board, i) => board[i] ?? 0;
+/**
+* Sows the seeds of `pit` one by one into the following places, skipping the other side's store.
+* The last seed in your own store gives another turn; in your own empty pit, with seeds opposite,
+* it takes them and itself into your store.
+*/
+function sow(board, side, pit) {
+	const next = [...board];
+	let seeds = at(next, pit);
+	next[pit] = 0;
+	const skip = storeOf(other(side));
+	const path = [];
+	let place = pit;
+	while (seeds > 0) {
+		place = (place + 1) % 14;
+		if (place === skip) continue;
+		next[place] = at(next, place) + 1;
+		seeds -= 1;
+		path.push(place);
+	}
+	const extra = place === storeOf(side);
+	let captured = 0;
+	const facing = 12 - place;
+	if (!extra && isOwnPit(side, place) && at(next, place) === 1 && at(next, facing) > 0) {
+		captured = at(next, facing) + 1;
+		next[storeOf(side)] = at(next, storeOf(side)) + captured;
+		next[place] = 0;
+		next[facing] = 0;
+	}
+	return {
+		board: next,
+		path,
+		extra,
+		captured
+	};
+}
+/** True when either side's pits are empty: the game is over. */
+function sideEmpty(board) {
+	return legalMoves(board, "player").length === 0 || legalMoves(board, "phone").length === 0;
+}
+/** Moves every seed left in a side's pits into that side's store. */
+function sweep(board) {
+	const next = [...board];
+	for (const side of ["player", "phone"]) {
+		const first = firstPit(side);
+		for (let pit = first; pit < first + 6; pit++) {
+			next[storeOf(side)] = at(next, storeOf(side)) + at(next, pit);
+			next[pit] = 0;
+		}
+	}
+	return next;
+}
+/** A starting board from one side's six pits, mirrored to the other side. */
+function boardFrom(pits) {
+	const board = new Array(14).fill(0);
+	for (let i = 0; i < 6; i++) {
+		board[i] = pits[i] ?? 0;
+		board[7 + i] = pits[i] ?? 0;
+	}
+	return board;
+}
+/**
+* Deals a game's pits: four in each for the first game, as the classic board is; later games
+* move six seeds between random pits (never emptying one), so they differ day to day. Always
+* draws 12 numbers.
+*/
+function deal(game, random) {
+	const pits = new Array(6).fill(4);
+	for (let i = 0; i < 6; i++) {
+		const from = Math.floor(random() * 6);
+		const to = Math.floor(random() * 6);
+		if (game > 1 && at(pits, from) > 1) {
+			pits[from] = at(pits, from) - 1;
+			pits[to] = at(pits, to) + 1;
+		}
+	}
+	return pits;
+}
+/** Who starts game `game`: you start the odd ones, the phone the even ones. */
+var starter = (game) => game % 2 === 1 ? "player" : "phone";
+function createSeeds(random) {
+	const layouts = Array.from({ length: 5 }, (_, i) => deal(i + 1, random));
+	return {
+		layouts,
+		game: 1,
+		board: boardFrom(layouts[0] ?? []),
+		turn: starter(1),
+		plies: 0,
+		score: 0,
+		results: [],
+		over: false
+	};
+}
+/** Ends the current game: sweeps, scores, then the next game or the end of the run. */
+function finishGame(state, events) {
+	const board = sweep(state.board);
+	const you = at(board, 6);
+	const phone = at(board, 13);
+	const result = you > phone ? "won" : you < phone ? "lost" : "drawn";
+	const points = you + (result === "won" ? 20 * state.game : 0);
+	state.score += points;
+	state.results.push(result);
+	events.push({
+		type: "game",
+		game: state.game,
+		result,
+		you,
+		phone,
+		points,
+		board
+	});
+	if (result === "lost" || state.game >= 5) {
+		state.board = board;
+		state.over = true;
+		events.push({ type: "over" });
+		return;
+	}
+	state.game += 1;
+	state.board = boardFrom(state.layouts[state.game - 1] ?? []);
+	state.turn = starter(state.game);
+	state.plies = 0;
+}
+/**
+* Plays `pit` for whichever side's turn it is. Throws on an illegal move (the scene only offers
+* legal ones; verify.ts checks before calling).
+*/
+function move(state, pit) {
+	if (state.over) throw new Error("Seeds: the run is over");
+	if (!legalMoves(state.board, state.turn).includes(pit)) throw new Error(`Seeds: ${pit} is not a legal move for the ${state.turn}`);
+	const side = state.turn;
+	const sown = sow(state.board, side, pit);
+	state.board = sown.board;
+	state.plies += 1;
+	const events = [{
+		type: "sow",
+		side,
+		pit,
+		path: sown.path,
+		captured: sown.captured,
+		extra: sown.extra,
+		board: [...sown.board]
+	}];
+	if (sideEmpty(state.board) || state.plies >= 200) finishGame(state, events);
+	else if (!sown.extra) state.turn = other(side);
+	return events;
+}
+var WIN_VALUE = 1e3;
+/**
+* The phone's view of a board, `depth` moves ahead (alpha-beta minimax). Positive is good for
+* the phone: the difference between the stores, or a decided game's final difference plus
+* WIN_VALUE. Moves are tried in pit order, so equal positions always resolve alike.
+*/
+function search(board, side, depth, alpha, beta) {
+	if (sideEmpty(board)) {
+		const final = sweep(board);
+		const diff = at(final, 13) - at(final, 6);
+		return diff === 0 ? 0 : diff + (diff > 0 ? WIN_VALUE : -1e3);
+	}
+	if (depth === 0) return at(board, 13) - at(board, 6);
+	const maximising = side === "phone";
+	let best = maximising ? -Infinity : Infinity;
+	for (const pit of legalMoves(board, side)) {
+		const sown = sow(board, side, pit);
+		const value = search(sown.board, sown.extra ? side : other(side), depth - 1, alpha, beta);
+		if (maximising) {
+			best = Math.max(best, value);
+			alpha = Math.max(alpha, value);
+		} else {
+			best = Math.min(best, value);
+			beta = Math.min(beta, value);
+		}
+		if (alpha >= beta) break;
+	}
+	return best;
+}
+/**
+* The phone's choice on its turn. Always draws two numbers: whether it plays at random this time
+* (by its level's blunder rate), and which of the moves it picks — at random, or among those it
+* rates best.
+*/
+function phoneChoice(state, random) {
+	const blunder = random();
+	const pick = random();
+	const moves = legalMoves(state.board, "phone");
+	const level = LEVELS[Math.min(state.game, LEVELS.length) - 1] ?? {
+		depth: 1,
+		blunder: 0
+	};
+	if (blunder < level.blunder) return moves[Math.floor(pick * moves.length)] ?? 0;
+	let bestValue = -Infinity;
+	let best = [];
+	for (const pit of moves) {
+		const sown = sow(state.board, "phone", pit);
+		const value = search(sown.board, sown.extra ? "phone" : "player", level.depth - 1, -Infinity, Infinity);
+		if (value > bestValue) {
+			bestValue = value;
+			best = [pit];
+		} else if (value === bestValue) best.push(pit);
+	}
+	return best[Math.floor(pick * best.length)] ?? moves[0] ?? 0;
+}
+// src/games/seeds/verify.ts
+/** No run can hold more of the player's moves than this. */
+var MAX_MOVES = 1e3;
+function isReplay$3(value) {
+	if (typeof value !== "object" || value === null) return false;
+	const { v, moves } = value;
+	if (v !== 1 || !Array.isArray(moves) || moves.length > MAX_MOVES) return false;
+	return moves.every((m) => Number.isInteger(m) && m >= 0 && m < 6);
+}
+var replayRun$3 = (random, replay) => {
+	if (!isReplay$3(replay)) return {
+		ok: false,
+		reason: "not a Seeds replay"
+	};
+	const state = createSeeds(random);
+	let next = 0;
+	while (!state.over) {
+		if (state.turn === "phone") {
+			move(state, phoneChoice(state, random));
+			continue;
+		}
+		const pit = replay.moves[next];
+		if (pit === void 0) return {
+			ok: false,
+			reason: "the run never ended"
+		};
+		if (!legalMoves(state.board, "player").includes(pit)) return {
+			ok: false,
+			reason: "an illegal move"
+		};
+		move(state, pit);
+		next += 1;
+	}
+	return next === replay.moves.length ? {
+		ok: true,
+		score: state.score
+	} : {
+		ok: false,
+		reason: "moves after the run ended"
 	};
 };
 // src/games/wallbreak/logic/wallbreak.ts
@@ -2202,12 +2483,13 @@ function cleanNickname(raw) {
 */
 var BOARD_GAMES = {
 	skyline: replayRun$1,
-	coil: replayRun$6,
+	coil: replayRun$7,
 	"star-raid": replayRun,
-	pairs: replayRun$5,
-	plunge: replayRun$4,
+	pairs: replayRun$6,
+	plunge: replayRun$5,
 	wallbreak: replayRun$2,
-	"pop-shot": replayRun$3
+	"pop-shot": replayRun$4,
+	seeds: replayRun$3
 };
 var KEEP_DAYS = 8;
 /**
